@@ -42,7 +42,7 @@
             <td class="px-3 py-2">{{ user.last_seen.as_deref().unwrap_or("unavailable") }}</td>
             <td class="px-3 py-2">
                 <div class="flex flex-wrap gap-2">
-                <a class="btn btn-soft" href="/admin/users?metadata={{ user.address }}">View metadata</a>
+                <!-- <a class="btn btn-soft" href="/admin/users?metadata={{ user.address }}">View metadata</a> -->
                 <a class="btn btn-soft" href="/admin/users?manage={{ user.address }}">Manage</a>
                 {% if user.blocked %}
                 <form action="/admin/users/unblock" method="post">
@@ -57,10 +57,10 @@
                     <button class="btn btn-soft" type="submit">Block</button>
                 </form>
                 {% endif %}
-                <form action="/admin/users/account-delete" method="post" onsubmit="return confirm('Delete user lifecycle path? This is destructive.');">
+                <form action="/admin/users/account-delete" method="post" onsubmit="return confirm('Delete user? This is destructive.');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="address" value="{{ user.address }}">
-                    <button class="btn btn-danger" type="submit">Delete user</button>
+                    <button class="btn btn-danger" type="submit">Delete</button>
                 </form>
                 </div>
             </td>
