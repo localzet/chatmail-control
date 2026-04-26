@@ -58,17 +58,18 @@ jobs:
       - name: Prepare release bundle
         run: |
           VERSION="${GITHUB_REF_NAME:-manual}"
-          ARTIFACT_DIR="dist/chatmail-control-${VERSION}-linux-amd64"
-          mkdir -p "$ARTIFACT_DIR"
-          cp target/release/chatmail-control "$ARTIFACT_DIR/"
-          cp README.md config.example.toml .env.example "$ARTIFACT_DIR/"
-          cp -r migrations templates static systemd "$ARTIFACT_DIR/"
+          BUNDLE_DIR="dist/chatmail-control-${VERSION}-linux-amd64-bundle"
+          RAW_BINARY="dist/chatmail-control-${VERSION}-linux-amd64"
+          mkdir -p "$BUNDLE_DIR"
+          cp target/release/chatmail-control "$BUNDLE_DIR/"
+          cp README.md config.example.toml .env.example "$BUNDLE_DIR/"
+          cp -r migrations templates static systemd "$BUNDLE_DIR/"
           cp scripts/install.sh "dist/install.sh"
           chmod +x "dist/install.sh"
-          cp target/release/chatmail-control "dist/chatmail-control-${VERSION}-linux-amd64"
-          tar -C dist -czf "dist/chatmail-control-${VERSION}-linux-amd64.tar.gz" "chatmail-control-${VERSION}-linux-amd64"
-          sha256sum "dist/chatmail-control-${VERSION}-linux-amd64" > "dist/chatmail-control-${VERSION}-linux-amd64.sha256"
-          sha256sum "dist/chatmail-control-${VERSION}-linux-amd64.tar.gz" > "dist/chatmail-control-${VERSION}-linux-amd64.tar.gz.sha256"
+          cp target/release/chatmail-control "$RAW_BINARY"
+          tar -C dist -czf "dist/chatmail-control-${VERSION}-linux-amd64-bundle.tar.gz" "chatmail-control-${VERSION}-linux-amd64-bundle"
+          sha256sum "$RAW_BINARY" > "${RAW_BINARY}.sha256"
+          sha256sum "dist/chatmail-control-${VERSION}-linux-amd64-bundle.tar.gz" > "dist/chatmail-control-${VERSION}-linux-amd64-bundle.tar.gz.sha256"
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4

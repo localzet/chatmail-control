@@ -135,7 +135,7 @@ curl -fsSL https://raw.githubusercontent.com/localzet/chatmail-control/main/scri
 What the installer does:
 
 - resolves the requested GitHub release;
-- downloads the release tarball and `.sha256`;
+- downloads the `*-bundle.tar.gz` release bundle and its `.sha256`;
 - verifies the checksum;
 - installs the binary to `/usr/local/bin/chatmail-control`;
 - installs static, templates, and migrations under `/opt/chatmail-control`;
