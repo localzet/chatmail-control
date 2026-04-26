@@ -1,82 +1,88 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="card">
-    <h3>Add ban</h3>
-    <form class="grid-form" action="/admin/bans" method="post">
+<section class="glass-card">
+    <h3 class="text-lg font-semibold text-white">Add ban</h3>
+    <form class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-5" action="/admin/bans" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <label>
+        <label class="text-sm text-slate-300">
             Kind
-            <select name="kind">
+            <select class="form-input" name="kind">
                 <option value="address">address</option>
                 <option value="domain">domain</option>
                 <option value="ip">ip</option>
                 <option value="subnet">subnet</option>
             </select>
         </label>
-        <label>
+        <label class="text-sm text-slate-300">
             Value
-            <input type="text" name="value" required>
+            <input class="form-input" type="text" name="value" required>
         </label>
-        <label>
+        <label class="text-sm text-slate-300">
             Reason
-            <input type="text" name="reason" required>
+            <input class="form-input" type="text" name="reason" required>
         </label>
-        <label>
+        <label class="text-sm text-slate-300">
             Expires at
-            <input type="datetime-local" name="expires_at">
+            <input class="form-input" type="datetime-local" name="expires_at">
         </label>
-        <button class="button" type="submit">Add ban</button>
+        <div class="flex items-end">
+            <button class="btn btn-primary w-full" type="submit">Add ban</button>
+        </div>
     </form>
 </section>
 
-<section class="card">
-    <form class="inline-form" action="/admin/bans" method="get">
-        <input type="text" name="q" placeholder="Search" value="{{ query }}">
-        <button class="button secondary" type="submit">Filter</button>
+<section class="glass-card mt-4 overflow-hidden">
+    <form class="mb-4 flex flex-wrap gap-2" action="/admin/bans" method="get">
+        <input class="form-input max-w-sm" type="text" name="q" placeholder="Search" value="{{ query }}">
+        <button class="btn btn-soft" type="submit">Filter</button>
     </form>
-    <table>
+    <div class="overflow-x-auto">
+    <table class="w-full text-sm">
         <thead>
-        <tr>
-            <th>Kind</th>
-            <th>Value</th>
-            <th>Reason</th>
-            <th>Active</th>
-            <th>Expires</th>
-            <th>Actions</th>
+        <tr class="border-b border-white/10 text-left text-xs uppercase tracking-wider text-slate-400">
+            <th class="px-3 py-2">Kind</th>
+            <th class="px-3 py-2">Value</th>
+            <th class="px-3 py-2">Reason</th>
+            <th class="px-3 py-2">Active</th>
+            <th class="px-3 py-2">Expires</th>
+            <th class="px-3 py-2">Actions</th>
         </tr>
         </thead>
         <tbody>
         {% for ban in bans %}
-        <tr>
-            <td>{{ ban.kind }}</td>
-            <td>{{ ban.value }}</td>
-            <td>{{ ban.reason }}</td>
-            <td>{% if ban.is_active == 1 %}yes{% else %}no{% endif %}</td>
-            <td>{{ ban.expires_at.as_deref().unwrap_or("-") }}</td>
-            <td class="actions">
+        <tr class="border-b border-white/5 text-slate-200">
+            <td class="px-3 py-2">{{ ban.kind }}</td>
+            <td class="px-3 py-2">{{ ban.value }}</td>
+            <td class="px-3 py-2">{{ ban.reason }}</td>
+            <td class="px-3 py-2">{% if ban.is_active == 1 %}yes{% else %}no{% endif %}</td>
+            <td class="px-3 py-2">{{ ban.expires_at.as_deref().unwrap_or("-") }}</td>
+            <td class="px-3 py-2">
+                <div class="flex flex-wrap gap-2">
                 {% if ban.is_active == 1 %}
                 <form action="/admin/bans/deactivate" method="post">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="id" value="{{ ban.id }}">
-                    <button class="button secondary" type="submit">Deactivate</button>
+                    <button class="btn btn-soft" type="submit">Deactivate</button>
                 </form>
                 {% else %}
                 <form action="/admin/bans/reactivate" method="post">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="id" value="{{ ban.id }}">
-                    <button class="button secondary" type="submit">Reactivate</button>
+                    <button class="btn btn-soft" type="submit">Reactivate</button>
                 </form>
                 {% endif %}
                 <form action="/admin/bans/delete" method="post" onsubmit="return confirm('Delete ban?');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="id" value="{{ ban.id }}">
-                    <button class="button danger" type="submit">Delete</button>
+                    <button class="btn btn-danger" type="submit">Delete</button>
                 </form>
+                </div>
             </td>
         </tr>
         {% endfor %}
         </tbody>
     </table>
+    </div>
 </section>
 {% endblock %}

@@ -1,70 +1,76 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="card">
-    <h3>Registration mode</h3>
-    <p>{{ registration_mode }}</p>
-    <p>Invite export is always maintained in the configured file. Integration hook is documented in README.</p>
+<section class="glass-card">
+    <h3 class="text-lg font-semibold text-white">Registration mode</h3>
+    <p class="mt-2 text-sm text-slate-300">{{ registration_mode }}</p>
+    <p class="mt-1 text-sm text-slate-400">Invite export is always maintained in the configured file. Integration hook is documented in README.</p>
 </section>
 
-<section class="card">
-    <h3>Create invite</h3>
-    <form class="grid-form" action="/admin/invites" method="post">
+<section class="glass-card mt-4">
+    <h3 class="text-lg font-semibold text-white">Create invite</h3>
+    <form class="mt-4 grid gap-4 md:grid-cols-3" action="/admin/invites" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <label>
+        <label class="text-sm text-slate-300">
             Comment
-            <input type="text" name="comment" required>
+            <input class="form-input" type="text" name="comment" required>
         </label>
-        <label>
+        <label class="text-sm text-slate-300">
             Max uses
-            <input type="number" name="max_uses" min="1" value="1" required>
+            <input class="form-input" type="number" name="max_uses" min="1" value="1" required>
         </label>
-        <label>
+        <label class="text-sm text-slate-300">
             Expires at
-            <input type="datetime-local" name="expires_at">
+            <input class="form-input" type="datetime-local" name="expires_at">
         </label>
-        <button class="button" type="submit">Create invite</button>
+        <div class="md:col-span-3">
+            <button class="btn btn-primary" type="submit">Create invite</button>
+        </div>
     </form>
 </section>
 
-<section class="card">
-    <table>
+<section class="glass-card mt-4 overflow-hidden">
+    <div class="overflow-x-auto">
+    <table class="w-full text-sm">
         <thead>
-        <tr>
-            <th>Token</th>
-            <th>Comment</th>
-            <th>Uses</th>
-            <th>Expires</th>
-            <th>Active</th>
-            <th>Actions</th>
+        <tr class="border-b border-white/10 text-left text-xs uppercase tracking-wider text-slate-400">
+            <th class="px-3 py-2">Token</th>
+            <th class="px-3 py-2">Comment</th>
+            <th class="px-3 py-2">Uses</th>
+            <th class="px-3 py-2">Expires</th>
+            <th class="px-3 py-2">Active</th>
+            <th class="px-3 py-2">Actions</th>
         </tr>
         </thead>
         <tbody>
         {% for invite in invites %}
-        <tr>
-            <td><code>{{ invite.token }}</code></td>
-            <td>{{ invite.comment }}</td>
-            <td>{{ invite.used_count }} / {{ invite.max_uses }}</td>
-            <td>{{ invite.expires_at.as_deref().unwrap_or("-") }}</td>
-            <td>{% if invite.is_active == 1 %}yes{% else %}no{% endif %}</td>
-            <td class="actions">
+        <tr class="border-b border-white/5 text-slate-200">
+            <td class="px-3 py-2"><code class="rounded bg-black/20 px-2 py-1 text-xs">{{ invite.token }}</code></td>
+            <td class="px-3 py-2">{{ invite.comment }}</td>
+            <td class="px-3 py-2">{{ invite.used_count }} / {{ invite.max_uses }}</td>
+            <td class="px-3 py-2">{{ invite.expires_at.as_deref().unwrap_or("-") }}</td>
+            <td class="px-3 py-2">{% if invite.is_active == 1 %}yes{% else %}no{% endif %}</td>
+            <td class="px-3 py-2">
+                <div class="flex flex-wrap gap-2">
                 {% if invite.is_active == 1 %}
                 <form action="/admin/invites/deactivate" method="post">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="id" value="{{ invite.id }}">
-                    <button class="button secondary" type="submit">Deactivate</button>
+                    <button class="btn btn-soft" type="submit">Deactivate</button>
                 </form>
                 {% else %}
                 <form action="/admin/invites/reactivate" method="post">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="id" value="{{ invite.id }}">
-                    <button class="button secondary" type="submit">Reactivate</button>
+                    <button class="btn btn-soft" type="submit">Reactivate</button>
                 </form>
                 {% endif %}
+                </div>
             </td>
         </tr>
         {% endfor %}
         </tbody>
     </table>
+    </div>
 </section>
 {% endblock %}

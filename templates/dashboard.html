@@ -1,66 +1,70 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="stats-grid">
-    <article class="card stat-card">
-        <h3>Mailboxes</h3>
-        <strong>{{ users_count }}</strong>
+<section class="grid gap-4 sm:grid-cols-3">
+    <article class="glass-card">
+        <h3 class="text-sm font-medium text-slate-400">Mailboxes</h3>
+        <strong class="mt-2 block text-3xl font-semibold text-white">{{ users_count }}</strong>
     </article>
-    <article class="card stat-card">
-        <h3>Active bans</h3>
-        <strong>{{ active_bans_count }}</strong>
+    <article class="glass-card">
+        <h3 class="text-sm font-medium text-slate-400">Active bans</h3>
+        <strong class="mt-2 block text-3xl font-semibold text-white">{{ active_bans_count }}</strong>
     </article>
-    <article class="card stat-card">
-        <h3>Mail queue</h3>
-        <strong>{{ mail_queue_size }}</strong>
+    <article class="glass-card">
+        <h3 class="text-sm font-medium text-slate-400">Mail queue</h3>
+        <strong class="mt-2 block text-3xl font-semibold text-white">{{ mail_queue_size }}</strong>
     </article>
 </section>
 
-<section class="card">
-    <h3>Services</h3>
-    <div class="service-grid">
+<section class="glass-card mt-4">
+    <h3 class="text-lg font-semibold text-white">Services</h3>
+    <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {% for item in service_statuses %}
-        <div class="service-pill {% if item.active %}ok{% else %}error{% endif %}">
-            <span>{{ item.name }}</span>
-            <small>{{ item.details }}</small>
+        <div class="rounded-2xl border px-4 py-3 {% if item.active %}border-emerald-400/30 bg-emerald-400/10{% else %}border-rose-400/40 bg-rose-400/10{% endif %}">
+            <span class="font-medium text-white">{{ item.name }}</span>
+            <small class="mt-1 block text-xs text-slate-300 break-all">{{ item.details }}</small>
         </div>
         {% endfor %}
     </div>
 </section>
 
-<section class="card">
-    <h3>Warnings</h3>
-    <ul class="simple-list">
+<section class="glass-card mt-4">
+    <h3 class="text-lg font-semibold text-white">Warnings</h3>
+    <ul class="mt-3 space-y-2">
         {% for item in warnings %}
-        <li><strong>{{ item.name }}</strong>: {{ item.details }}</li>
+        <li class="rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-sm text-amber-100">
+            <strong>{{ item.name }}</strong>: {{ item.details }}
+        </li>
         {% endfor %}
         {% if warnings.len() == 0 %}
-        <li>No warnings</li>
+        <li class="text-sm text-slate-400">No warnings</li>
         {% endif %}
     </ul>
 </section>
 
-<section class="card">
-    <h3>Recent audit events</h3>
-    <table>
+<section class="glass-card mt-4 overflow-hidden">
+    <h3 class="text-lg font-semibold text-white">Recent audit events</h3>
+    <div class="mt-3 overflow-x-auto">
+    <table class="w-full text-sm">
         <thead>
-        <tr>
-            <th>Time</th>
-            <th>Action</th>
-            <th>Target</th>
-            <th>IP</th>
+        <tr class="border-b border-white/10 text-left text-xs uppercase tracking-wider text-slate-400">
+            <th class="px-3 py-2">Time</th>
+            <th class="px-3 py-2">Action</th>
+            <th class="px-3 py-2">Target</th>
+            <th class="px-3 py-2">IP</th>
         </tr>
         </thead>
         <tbody>
         {% for event in audit_events %}
-        <tr>
-            <td>{{ event.created_at }}</td>
-            <td>{{ event.action }}</td>
-            <td>{{ event.target_type }} / {{ event.target_value }}</td>
-            <td>{{ event.ip_address.as_deref().unwrap_or("-") }}</td>
+        <tr class="border-b border-white/5 text-slate-200">
+            <td class="px-3 py-2">{{ event.created_at }}</td>
+            <td class="px-3 py-2">{{ event.action }}</td>
+            <td class="px-3 py-2">{{ event.target_type }} / {{ event.target_value }}</td>
+            <td class="px-3 py-2">{{ event.ip_address.as_deref().unwrap_or("-") }}</td>
         </tr>
         {% endfor %}
         </tbody>
     </table>
+    </div>
 </section>
 {% endblock %}

@@ -1,26 +1,32 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="card">
-    <table>
+<section class="glass-card overflow-hidden">
+    <div class="overflow-x-auto">
+    <table class="w-full text-sm">
         <thead>
-        <tr>
-            <th>Check</th>
-            <th>Status</th>
-            <th>Details</th>
+        <tr class="border-b border-white/10 text-left text-xs uppercase tracking-wider text-slate-400">
+            <th class="px-3 py-2">Check</th>
+            <th class="px-3 py-2">Status</th>
+            <th class="px-3 py-2">Details</th>
         </tr>
         </thead>
         <tbody>
         {% for check in checks %}
-        <tr>
-            <td>{{ check.name }}</td>
-            <td>{{ check.status }}</td>
-            <td>
-                <pre>{{ check.details }}</pre>
+        <tr class="border-b border-white/5 text-slate-200">
+            <td class="px-3 py-2">{{ check.name }}</td>
+            <td class="px-3 py-2">
+                <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium {% if check.status == "ok" %}bg-emerald-400/20 text-emerald-200{% else %}bg-amber-400/20 text-amber-100{% endif %}">
+                    {{ check.status }}
+                </span>
+            </td>
+            <td class="px-3 py-2">
+                <pre class="max-h-64 overflow-auto whitespace-pre-wrap text-xs text-slate-300">{{ check.details }}</pre>
             </td>
         </tr>
         {% endfor %}
         </tbody>
     </table>
+    </div>
 </section>
 {% endblock %}

@@ -2,65 +2,69 @@
 
 {% block content %}
 {% if let Some(kind) = status_kind.as_deref() %}
-<section class="card notice {{ kind }}">
+<section class="glass-card notice {{ kind }}">
     {% if let Some(title) = status_title.as_deref() %}
     <strong>{{ title }}</strong>
     {% endif %}
 </section>
 {% endif %}
 
-<section class="card">
-    <h3>Service actions</h3>
-    <table>
+<section class="glass-card {% if status_kind.is_some() %}mt-4{% endif %}">
+    <h3 class="text-lg font-semibold text-white">Service actions</h3>
+    <div class="mt-3 overflow-x-auto">
+    <table class="w-full text-sm">
         <thead>
-        <tr>
-            <th>Service</th>
-            <th>Actions</th>
+        <tr class="border-b border-white/10 text-left text-xs uppercase tracking-wider text-slate-400">
+            <th class="px-3 py-2">Service</th>
+            <th class="px-3 py-2">Actions</th>
         </tr>
         </thead>
         <tbody>
         {% for svc in services %}
-        <tr>
-            <td>{{ svc.name }}</td>
-            <td class="actions">
+        <tr class="border-b border-white/5 text-slate-200">
+            <td class="px-3 py-2">{{ svc.name }}</td>
+            <td class="px-3 py-2">
+                <div class="flex flex-wrap gap-2">
                 <form action="/admin/services/action" method="post">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="service" value="{{ svc.name }}">
                     <input type="hidden" name="action" value="status">
-                    <button class="button secondary" type="submit">Status</button>
+                    <button class="btn btn-soft" type="submit">Status</button>
                 </form>
                 <form action="/admin/services/action" method="post" onsubmit="return confirm('Restart service?');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="service" value="{{ svc.name }}">
                     <input type="hidden" name="action" value="restart">
-                    <button class="button danger" type="submit">Restart</button>
+                    <button class="btn btn-danger" type="submit">Restart</button>
                 </form>
                 <form action="/admin/services/action" method="post">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="service" value="{{ svc.name }}">
                     <input type="hidden" name="action" value="reload">
-                    <button class="button secondary" type="submit">Reload</button>
+                    <button class="btn btn-soft" type="submit">Reload</button>
                 </form>
-                <a class="button secondary" href="/admin/services?service={{ svc.name }}">Tail logs</a>
+                <a class="btn btn-soft" href="/admin/services?service={{ svc.name }}">Tail logs</a>
+                </div>
             </td>
         </tr>
         {% endfor %}
         </tbody>
     </table>
+    </div>
 </section>
 
 {% if let Some(service) = selected_service.as_deref() %}
-<section class="card">
-    <h3>Recent logs: {{ service }}</h3>
+<section class="glass-card mt-4">
+    <h3 class="text-lg font-semibold text-white">Recent logs: {{ service }}</h3>
     <pre class="log-view">{% for line in tail_lines %}<span class="log-{{ line.level }}">{{ line.text }}</span>
 {% endfor %}</pre>
 </section>
 {% endif %}
 
 {% if let Some(result) = action_result %}
-<section class="card">
-    <h3>Action result</h3>
-    <pre>{{ result.service }} {{ result.action }} (status={{ result.status }})
+<section class="glass-card mt-4">
+    <h3 class="text-lg font-semibold text-white">Action result</h3>
+    <pre class="max-h-72 overflow-auto whitespace-pre-wrap text-sm text-slate-300">{{ result.service }} {{ result.action }} (status={{ result.status }})
 stdout: {{ result.stdout }}
 stderr: {{ result.stderr }}</pre>
 </section>

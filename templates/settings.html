@@ -2,18 +2,18 @@
 
 {% block content %}
 {% if let Some(kind) = status_kind.as_deref() %}
-<section class="card notice {{ kind }}">
+<section class="glass-card notice {{ kind }}">
     {% if let Some(title) = status_title.as_deref() %}
     <strong>{{ title }}</strong>
     {% endif %}
 </section>
 {% endif %}
-<section class="card">
-    <form class="grid-form" action="/admin/settings" method="post">
+<section class="glass-card {% if status_kind.is_some() %}mt-4{% endif %}">
+    <form class="grid gap-4 md:grid-cols-2" action="/admin/settings" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <label>
+        <label class="text-sm text-slate-300">
             Registration mode
-            <select name="registration_mode">
+            <select class="form-input" name="registration_mode">
                 <option value="public" {% if settings.registration_mode==
                 "public" %}selected{% endif %}>public</option>
                 <option value="invite_only" {% if settings.registration_mode==
@@ -22,33 +22,35 @@
                 "closed" %}selected{% endif %}>closed</option>
             </select>
         </label>
-        <label>
+        <label class="text-sm text-slate-300">
             Max accounts per IP per day
-            <input type="number" name="max_accounts_per_ip_per_day" value="{{ settings.max_accounts_per_ip_per_day }}">
+            <input class="form-input" type="number" name="max_accounts_per_ip_per_day" value="{{ settings.max_accounts_per_ip_per_day }}">
         </label>
-        <label>
+        <label class="text-sm text-slate-300">
             Max accounts per day
-            <input type="number" name="max_accounts_per_day" value="{{ settings.max_accounts_per_day }}">
+            <input class="form-input" type="number" name="max_accounts_per_day" value="{{ settings.max_accounts_per_day }}">
         </label>
-        <label>
+        <label class="text-sm text-slate-300">
             Cleanup empty mailboxes after days
-            <input type="number" name="cleanup_empty_mailboxes_after_days"
+            <input class="form-input" type="number" name="cleanup_empty_mailboxes_after_days"
                    value="{{ settings.cleanup_empty_mailboxes_after_days }}">
         </label>
-        <label class="full-width">
+        <label class="text-sm text-slate-300 md:col-span-2">
             Notes
-            <textarea name="notes" rows="5">{{ settings.notes }}</textarea>
+            <textarea class="form-input min-h-28" name="notes" rows="5">{{ settings.notes }}</textarea>
         </label>
-        <button class="button" type="submit">Save settings</button>
+        <div class="md:col-span-2">
+            <button class="btn btn-primary" type="submit">Save settings</button>
+        </div>
     </form>
 </section>
 
-<section class="card">
-    <h3>Postfix policy wiring</h3>
-    <p>Safely merge ban access checks into current Postfix restriction chains without replacing unrelated rules.</p>
-    <form action="/admin/settings/postfix-sync" method="post">
+<section class="glass-card mt-4">
+    <h3 class="text-lg font-semibold text-white">Postfix policy wiring</h3>
+    <p class="mt-2 text-sm text-slate-400">Safely merge ban access checks into current Postfix restriction chains without replacing unrelated rules.</p>
+    <form class="mt-4" action="/admin/settings/postfix-sync" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button class="button secondary" type="submit">Apply/repair Postfix ban policy</button>
+        <button class="btn btn-soft" type="submit">Apply/repair Postfix ban policy</button>
     </form>
 </section>
 {% endblock %}

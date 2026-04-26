@@ -4,24 +4,44 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Login · chatmail-control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              navy: {
+                950: "#060b1d"
+              }
+            }
+          }
+        }
+      }
+    </script>
     <link rel="stylesheet" href="/static/app.css">
 </head>
-<body class="login-page">
-<section class="login-card">
-    <h1>chatmail-control</h1>
-    <p>Admin login</p>
-    <form action="/login" method="post">
+<body class="min-h-screen bg-navy-950 text-slate-100 antialiased">
+<div class="fixed inset-0 -z-10 overflow-hidden">
+    <div class="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl animate-float"></div>
+    <div class="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-indigo-400/20 blur-3xl animate-float-slow"></div>
+</div>
+<main class="mx-auto grid min-h-screen w-full max-w-6xl place-items-center px-4">
+<section class="glass-card w-full max-w-md animate-fade-in">
+    <h1 class="text-2xl font-semibold tracking-wide text-white">chatmail-control</h1>
+    <p class="mt-2 text-sm text-slate-400">Admin login</p>
+    <form action="/login" method="post" class="mt-6 space-y-4">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <label>
+        <label class="block text-sm text-slate-300">
             Username
-            <input type="text" name="username" required>
+            <input class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-slate-100 outline-none transition focus:border-blue-400/60 focus:bg-white/10" type="text" name="username" required>
         </label>
-        <label>
+        <label class="block text-sm text-slate-300">
             Password
-            <input type="password" name="password" required>
+            <input class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-slate-100 outline-none transition focus:border-blue-400/60 focus:bg-white/10" type="password" name="password" required>
         </label>
-        <button class="button" type="submit">Login</button>
+        <button class="btn btn-primary w-full" type="submit">Login</button>
     </form>
 </section>
+</main>
 </body>
 </html>
