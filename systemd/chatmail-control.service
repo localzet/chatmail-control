@@ -4,19 +4,12 @@ After=network.target
 
 [Service]
 Type=simple
-User=chatmail-control
-Group=chatmail-control
 WorkingDirectory=/opt/chatmail-control
 ExecStart=/usr/local/bin/chatmail-control serve --config /etc/chatmail-control/config.toml
 Restart=always
 RestartSec=5
-NoNewPrivileges=true
+NoNewPrivileges=false
 PrivateTmp=true
-ProtectSystem=strict
-ProtectHome=true
-ProtectKernelTunables=true
-ProtectControlGroups=true
-ReadWritePaths=/var/lib/chatmail-control /etc/chatmail-control
 
 [Install]
 WantedBy=multi-user.target

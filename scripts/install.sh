@@ -7,10 +7,8 @@ INSTALL_ROOT="${CHATMAIL_CONTROL_INSTALL_ROOT:-/opt/chatmail-control}"
 BINARY_PATH="${CHATMAIL_CONTROL_BINARY_PATH:-/usr/local/bin/chatmail-control}"
 CONFIG_DIR="${CHATMAIL_CONTROL_CONFIG_DIR:-/etc/chatmail-control}"
 STATE_DIR="${CHATMAIL_CONTROL_STATE_DIR:-/var/lib/chatmail-control}"
-SERVICE_USER="${CHATMAIL_CONTROL_SERVICE_USER:-chatmail-control}"
-SERVICE_GROUP="${CHATMAIL_CONTROL_SERVICE_GROUP:-chatmail-control}"
 ENABLE_SERVICE="${CHATMAIL_CONTROL_ENABLE_SERVICE:-1}"
-START_SERVICE="${CHATMAIL_CONTROL_START_SERVICE:-1}"
+START_SERVICE="${CHATMAIL_CONTROL_START_SERVICE:-0}"
 
 usage() {
   cat <<'EOF'
@@ -25,10 +23,8 @@ Options:
   --binary-path PATH      Final binary path
   --config-dir PATH       Configuration directory
   --state-dir PATH        Writable application state directory
-  --service-user VALUE    Service user
-  --service-group VALUE   Service group
   --no-enable             Do not enable the systemd service
-  --no-start              Do not start or restart the systemd service
+  --start                 Start or restart the systemd service after install
   -h, --help              Show this help
 
 Environment variables:
@@ -37,8 +33,6 @@ Environment variables:
   CHATMAIL_CONTROL_BINARY_PATH
   CHATMAIL_CONTROL_CONFIG_DIR
   CHATMAIL_CONTROL_STATE_DIR
-  CHATMAIL_CONTROL_SERVICE_USER
-  CHATMAIL_CONTROL_SERVICE_GROUP
   CHATMAIL_CONTROL_ENABLE_SERVICE
   CHATMAIL_CONTROL_START_SERVICE
 EOF
@@ -80,20 +74,12 @@ parse_args() {
         STATE_DIR="${2:?missing value for --state-dir}"
         shift 2
         ;;
-      --service-user)
-        SERVICE_USER="${2:?missing value for --service-user}"
-        shift 2
-        ;;
-      --service-group)
-        SERVICE_GROUP="${2:?missing value for --service-group}"
-        shift 2
-        ;;
       --no-enable)
         ENABLE_SERVICE=0
         shift
         ;;
-      --no-start)
-        START_SERVICE=0
+      --start)
+        START_SERVICE=1
         shift
         ;;
       -h|--help)
@@ -125,23 +111,6 @@ resolve_version() {
       | head -n1
   )"
   [[ -n "${VERSION}" ]] || fail "failed to resolve latest release tag"
-}
-
-ensure_service_account() {
-  if ! getent group "${SERVICE_GROUP}" >/dev/null 2>&1; then
-    log "creating group ${SERVICE_GROUP}"
-    groupadd --system "${SERVICE_GROUP}"
-  fi
-
-  if ! id -u "${SERVICE_USER}" >/dev/null 2>&1; then
-    log "creating user ${SERVICE_USER}"
-    useradd \
-      --system \
-      --home "${STATE_DIR}" \
-      --shell /usr/sbin/nologin \
-      --gid "${SERVICE_GROUP}" \
-      "${SERVICE_USER}"
-  fi
 }
 
 install_release() {
@@ -179,8 +148,8 @@ install_release() {
   bundle_dir="${tmp_dir}/${asset_base}-bundle"
   [[ -d "${bundle_dir}" ]] || fail "release bundle layout is invalid"
 
-  install -d -o "${SERVICE_USER}" -g "${SERVICE_GROUP}" "${INSTALL_ROOT}" "${CONFIG_DIR}" "${STATE_DIR}"
-  install -d -o "${SERVICE_USER}" -g "${SERVICE_GROUP}" "${INSTALL_ROOT}/static" "${INSTALL_ROOT}/templates" "${INSTALL_ROOT}/migrations"
+  install -d "${INSTALL_ROOT}" "${CONFIG_DIR}" "${STATE_DIR}"
+  install -d "${INSTALL_ROOT}/static" "${INSTALL_ROOT}/templates" "${INSTALL_ROOT}/migrations"
 
   log "installing binary"
   install -m 0755 "${bundle_dir}/chatmail-control" "${BINARY_PATH}"
@@ -189,7 +158,6 @@ install_release() {
   cp -R "${bundle_dir}/static/." "${INSTALL_ROOT}/static/"
   cp -R "${bundle_dir}/templates/." "${INSTALL_ROOT}/templates/"
   cp -R "${bundle_dir}/migrations/." "${INSTALL_ROOT}/migrations/"
-  chown -R "${SERVICE_USER}:${SERVICE_GROUP}" "${INSTALL_ROOT}" "${STATE_DIR}" "${CONFIG_DIR}"
 
   log "installing config example"
   install -m 0644 "${bundle_dir}/config.example.toml" "${CONFIG_DIR}/config.example.toml"
@@ -221,8 +189,8 @@ chatmail-control ${VERSION} installed successfully.
 Next steps:
   1. Edit ${CONFIG_DIR}/config.toml
   2. Create the first admin:
-     sudo -u ${SERVICE_USER} ${BINARY_PATH} admin create --config ${CONFIG_DIR}/config.toml --username admin --password 'CHANGE_ME'
-  3. Restart the service if you changed config:
+     ${BINARY_PATH} admin create --config ${CONFIG_DIR}/config.toml --username admin --password 'CHANGE_ME'
+  3. Start or restart the service:
      sudo systemctl restart chatmail-control
 
 EOF
@@ -237,7 +205,6 @@ main() {
   require_command install
   require_command systemctl
 
-  ensure_service_account
   resolve_version
   install_release
 }

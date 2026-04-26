@@ -34,8 +34,7 @@ This is not webmail, not a mailbox client, and not a Mailcow/PostfixAdmin replac
 - The UI degrades to `unavailable` when an external command is missing or fails.
 - Health checks tolerate missing local tools such as `systemctl`, `postqueue`, or `openssl` and render warnings instead of crashing.
 - Invite handling is storage/export only. Real auth-side invite enforcement is left as an integration hook and documented below.
-- The supported deployment model is a native host install on the mail server, managed by systemd.
-
+- The supported deployment model is a native host install on the mail server, managed by systemd and running with host-level privileges.
 
 ## Build From Source
 
@@ -59,67 +58,33 @@ Run the server:
 chatmail-control serve --config ./config.toml
 ```
 
-## Create the First Admin
-
-```bash
-chatmail-control admin create --config ./config.toml --username admin --password 'CHANGE_ME'
-```
-
-Reset password:
-
-```bash
-chatmail-control admin reset-password --config ./config.toml --username admin --password 'NEW_SECRET'
-```
-
 ## Deployment Model
 
 The supported deployment model is a native binary on the same host as Postfix, Dovecot, and other chatmail services, managed by systemd.
 
-You run exactly one process on the server:
+The service is intended to run with host-level privileges because it needs access to:
 
-```bash
-/usr/local/bin/chatmail-control serve --config /etc/chatmail-control/config.toml
-```
+- `doveadm`
+- `postqueue`
+- `journalctl`
+- `systemctl reload ...`
+- local service state and host filesystem policy files
 
-Why this is the primary model:
+This is not an unprivileged sidecar service. Treat it as a host admin component.
 
-- the app needs access to host-level commands such as `doveadm`, `postqueue`, `journalctl`, `systemctl`, and local service state;
-- ban, settings, and invite exports are intended to live on the mail host filesystem;
-- reload commands are expected to operate on host services such as Postfix, Dovecot, and doveauth.
+## Deployment Order
 
-Recommended server install flow:
+Use this order on a real server:
 
-1. Download the release tarball from GitHub Releases.
-2. Extract it on the mail host.
-3. Install the binary to `/usr/local/bin/chatmail-control`.
-4. Install the config to `/etc/chatmail-control/config.toml`.
-5. Create writable directories:
+1. Install the release bundle.
+2. Edit `/etc/chatmail-control/config.toml`.
+3. Create the first admin.
+4. Start the systemd service.
+5. Put a reverse proxy with HTTPS in front of it.
 
-```bash
-sudo useradd --system --home /var/lib/chatmail-control --shell /usr/sbin/nologin chatmail-control || true
-sudo install -d -o chatmail-control -g chatmail-control /var/lib/chatmail-control /etc/chatmail-control
-```
+## Installer Script
 
-6. Create the first admin:
-
-```bash
-sudo -u chatmail-control /usr/local/bin/chatmail-control admin create \
-  --config /etc/chatmail-control/config.toml \
-  --username admin \
-  --password 'CHANGE_ME'
-```
-
-7. Enable the service:
-
-```bash
-sudo install -m 0644 systemd/chatmail-control.service /etc/systemd/system/chatmail-control.service
-sudo systemctl daemon-reload
-sudo systemctl enable --now chatmail-control
-```
-
-### Installer Script
-
-For a rustup-style one-liner install flow, use the bundled installer script from the repository:
+For a rustup-style one-liner install flow:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/localzet/chatmail-control/main/scripts/install.sh | sudo bash
@@ -141,7 +106,8 @@ What the installer does:
 - installs static, templates, and migrations under `/opt/chatmail-control`;
 - installs `config.example.toml` and creates `config.toml` if missing;
 - installs and reloads the systemd unit;
-- enables and starts the service by default.
+- enables the service by default;
+- does not start the service unless `--start` is passed.
 
 Supported flags:
 
@@ -150,27 +116,89 @@ Supported flags:
 - `--binary-path /usr/local/bin/chatmail-control`
 - `--config-dir /etc/chatmail-control`
 - `--state-dir /var/lib/chatmail-control`
-- `--service-user chatmail-control`
-- `--service-group chatmail-control`
+- `--start`
 - `--no-enable`
-- `--no-start`
+
+## Manual Install
+
+Install the release contents:
+
+```bash
+sudo install -d /opt/chatmail-control /etc/chatmail-control /var/lib/chatmail-control
+sudo install -m 0755 target/release/chatmail-control /usr/local/bin/chatmail-control
+sudo cp -r static templates migrations /opt/chatmail-control/
+sudo install -m 0644 config.example.toml /etc/chatmail-control/config.example.toml
+sudo install -m 0644 systemd/chatmail-control.service /etc/systemd/system/chatmail-control.service
+sudo systemctl daemon-reload
+sudo systemctl enable chatmail-control
+```
+
+## Configure
+
+Edit `/etc/chatmail-control/config.toml`.
+
+Minimum temporary HTTP test setup:
+
+```toml
+[server]
+bind = "127.0.0.1:8088"
+public_url = "http://127.0.0.1:8088"
+secure_cookies = false
+database_url = "sqlite:///var/lib/chatmail-control/chatmail-control.db"
+
+[auth]
+session_secret = "REPLACE_WITH_A_LONG_RANDOM_SECRET"
+session_ttl_hours = 12
+```
+
+For real deployment:
+
+- keep `bind = "127.0.0.1:8088"` unless you absolutely need direct exposure;
+- put a reverse proxy with HTTPS in front;
+- set `public_url` to the real external HTTPS URL;
+- set `secure_cookies = true` when serving behind HTTPS;
+- replace the default `health.domain = "example.com"` with your real domain.
+
+## Bootstrap Admin
+
+Create the first admin after config is in place:
+
+```bash
+sudo /usr/local/bin/chatmail-control admin create \
+  --config /etc/chatmail-control/config.toml \
+  --username admin \
+  --password 'CHANGE_ME'
+```
+
+Reset password:
+
+```bash
+sudo /usr/local/bin/chatmail-control admin reset-password \
+  --config /etc/chatmail-control/config.toml \
+  --username admin \
+  --password 'NEW_SECRET'
+```
+
+## Start the Service
+
+```bash
+sudo systemctl restart chatmail-control
+sudo systemctl status chatmail-control --no-pager
+```
 
 ## systemd
+
+The provided unit intentionally runs as root. That is required for practical access to Dovecot, Postfix, queue inspection, log access, and reload commands.
 
 Binary path in the provided unit:
 
 - `/usr/local/bin/chatmail-control`
 - config: `/etc/chatmail-control/config.toml`
-- writable paths: `/var/lib/chatmail-control`, `/etc/chatmail-control`
 
-Install:
+Start command:
 
 ```bash
-sudo install -m 0755 target/release/chatmail-control /usr/local/bin/chatmail-control
-sudo install -d -o chatmail-control -g chatmail-control /var/lib/chatmail-control /etc/chatmail-control
-sudo install -m 0644 systemd/chatmail-control.service /etc/systemd/system/chatmail-control.service
-sudo systemctl daemon-reload
-sudo systemctl enable --now chatmail-control
+/usr/local/bin/chatmail-control serve --config /etc/chatmail-control/config.toml
 ```
 
 ## Example Config
@@ -207,6 +235,12 @@ server {
     }
 }
 ```
+
+With a reverse proxy in place:
+
+- set `public_url = "https://your-real-admin-host"`
+- set `secure_cookies = true`
+- keep the app bound to `127.0.0.1:8088`
 
 ## Bans Integration
 
@@ -274,8 +308,10 @@ If one of these tools is unavailable, the page still opens and shows a warning o
 ## Security Notes
 
 - Default bind is `127.0.0.1:8088`.
+- The service is expected to run with host-level privileges.
 - Do not expose this panel directly to the internet without HTTPS, a reverse proxy, and an allowlist.
 - Replace `auth.session_secret` before production use.
+- Keep `secure_cookies = false` only for temporary plain HTTP testing.
 - Keep `secure_cookies = true` when served behind HTTPS.
 - Login rate limiting is in-memory only in MVP scope.
 - Passwords are hashed with Argon2 and never logged.
@@ -286,7 +322,51 @@ If one of these tools is unavailable, the page still opens and shows a warning o
 ## Troubleshooting
 
 - Login returns `401`: verify that the admin exists and the password was set with the CLI.
+- `/admin` returns `401`: expected without a valid login session, use `/login`.
 - Users page is empty: check `users.list_command` output manually on the host.
+- `doveadm user '*'` works as `root` but not as an unprivileged user: expected on many real systems; the provided deployment model runs the service with host-level privileges.
 - Mailbox metrics show `unavailable`: the optional command failed or returned unsupported output.
 - Health page shows warnings: verify that required host tools and services are available on the mail server.
 - Bans were saved but Postfix/Dovecot did not reload: inspect `audit_log` and configured `reload_commands`.
+
+## GitHub Actions / CI-CD
+
+The repository includes:
+
+- `.github/workflows/ci.yml`
+- `.github/workflows/release.yml`
+
+`ci.yml` runs:
+
+- `cargo fmt --check`
+- `cargo clippy --all-targets --all-features -- -D warnings`
+- `cargo test`
+- `cargo build --locked`
+
+`release.yml` runs on tag `v*` or manual dispatch and:
+
+- verifies formatting, clippy, and tests;
+- builds a Linux AMD64 release bundle;
+- publishes a standalone Linux AMD64 binary;
+- publishes the installer script;
+- uploads `.tar.gz` and `.sha256` files to GitHub Release assets;
+- uploads the same bundle as a workflow artifact.
+
+Expected tag flow:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+After that, the GitHub Release includes:
+
+- `chatmail-control-<version>-linux-amd64` as a standalone binary;
+- `chatmail-control-<version>-linux-amd64-bundle.tar.gz` as the full runtime bundle;
+- `.sha256` files for both;
+- `install.sh`.
+
+Requirements:
+
+- GitHub Actions must be enabled for the repository;
+- the release workflow uses `GITHUB_TOKEN`, so no extra PAT is required for the default case.
