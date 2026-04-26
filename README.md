@@ -265,6 +265,25 @@ Typical integration path:
 2. Keep `reload_commands` configured so Postfix/Dovecot reload after admin changes.
 3. Validate file ownership and permissions so the service user can update files safely.
 
+Recommended Postfix wiring for this project:
+
+```bash
+sudo postconf -e 'smtpd_recipient_restrictions = check_recipient_access texthash:/etc/chatmail-control/blocked_addresses.txt, reject_unauth_destination'
+sudo postconf -e 'smtpd_sender_restrictions = check_sender_access texthash:/etc/chatmail-control/blocked_addresses.txt, check_sender_access texthash:/etc/chatmail-control/blocked_domains.txt'
+sudo postconf -e 'smtpd_client_restrictions = check_client_access texthash:/etc/chatmail-control/blocked_ips.txt'
+sudo systemctl reload postfix
+```
+
+Notes:
+
+- `texthash:` is intentional here so Postfix can read the generated text files directly without a separate `postmap` step.
+- address bans must be enforced through both `check_recipient_access` and `check_sender_access`, otherwise a blocked mailbox can still send mail;
+- domain bans are enforced through `check_sender_access`;
+- IP and subnet bans are enforced through `check_client_access`.
+- If you already have custom Postfix restrictions, merge these access checks into your existing chains instead of replacing them blindly with `postconf -e`.
+
+The Health page verifies these `postconf` integrations automatically and reports a warning when ban files are generated but not wired into Postfix on both directions.
+
 ## Settings Integration
 
 Registration settings are stored in SQLite and exported to the file configured in `[settings].generated_policy_file`.

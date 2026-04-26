@@ -160,7 +160,104 @@ pub async fn run_health_checks(shell: &Shell, config: &Config) -> Vec<HealthChec
         },
     });
 
+    checks.extend(check_postfix_ban_integration(shell, config).await);
+
     checks
+}
+
+async fn check_postfix_ban_integration(shell: &Shell, config: &Config) -> Vec<HealthCheck> {
+    let mut checks = Vec::new();
+    let postconf = shell.run(&["postconf".into()]).await;
+
+    let output = match postconf {
+        Ok(output) if output.status == 0 => output.stdout,
+        Ok(output) => {
+            let details = if output.stderr.is_empty() {
+                output.stdout
+            } else {
+                output.stderr
+            };
+            return vec![HealthCheck {
+                name: "postfix:bans".into(),
+                status: "warn".into(),
+                details: format!("postconf unavailable or failed: {details}"),
+            }];
+        }
+        Err(err) => {
+            return vec![HealthCheck {
+                name: "postfix:bans".into(),
+                status: "warn".into(),
+                details: format!("postconf unavailable or failed: {err}"),
+            }];
+        }
+    };
+
+    checks.push(restriction_check(
+        &output,
+        "smtpd_recipient_restrictions",
+        &[("check_recipient_access", &config.bans.address_file)],
+        "postfix:bans:addresses",
+        "sudo postconf -e 'smtpd_recipient_restrictions = check_recipient_access texthash:/etc/chatmail-control/blocked_addresses.txt, reject_unauth_destination'",
+    ));
+
+    checks.push(restriction_check(
+        &output,
+        "smtpd_sender_restrictions",
+        &[
+            ("check_sender_access", &config.bans.address_file),
+            ("check_sender_access", &config.bans.domain_file),
+        ],
+        "postfix:bans:senders",
+        "sudo postconf -e 'smtpd_sender_restrictions = check_sender_access texthash:/etc/chatmail-control/blocked_addresses.txt, check_sender_access texthash:/etc/chatmail-control/blocked_domains.txt'",
+    ));
+
+    checks.push(restriction_check(
+        &output,
+        "smtpd_client_restrictions",
+        &[("check_client_access", &config.bans.ip_file)],
+        "postfix:bans:ips",
+        "sudo postconf -e 'smtpd_client_restrictions = check_client_access texthash:/etc/chatmail-control/blocked_ips.txt'",
+    ));
+
+    checks
+}
+
+fn restriction_check(
+    postconf: &str,
+    setting_name: &str,
+    expected_checks: &[(&str, &str)],
+    check_name: &str,
+    remediation: &str,
+) -> HealthCheck {
+    let line = postconf
+        .lines()
+        .find(|line| line.starts_with(&format!("{setting_name} =")))
+        .unwrap_or_default()
+        .to_string();
+    let is_ok = expected_checks.iter().all(|(expected_check, file_path)| {
+        line.contains(expected_check) && line.contains(file_path)
+    });
+
+    if is_ok {
+        HealthCheck {
+            name: check_name.into(),
+            status: "ok".into(),
+            details: line,
+        }
+    } else {
+        let expected = expected_checks
+            .iter()
+            .map(|(expected_check, file_path)| format!("{expected_check} + {file_path}"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        HealthCheck {
+            name: check_name.into(),
+            status: "warn".into(),
+            details: format!(
+                "missing Postfix integration for {expected}. Current: {line}. Apply: {remediation}"
+            ),
+        }
+    }
 }
 
 async fn txt_record_check(
@@ -195,5 +292,37 @@ async fn txt_record_check(
             status: "error".into(),
             details: err.to_string(),
         },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::restriction_check;
+
+    #[test]
+    fn validates_bidirectional_address_ban_wiring() {
+        let postconf = concat!(
+            "smtpd_sender_restrictions = check_sender_access texthash:/etc/chatmail-control/blocked_addresses.txt, ",
+            "check_sender_access texthash:/etc/chatmail-control/blocked_domains.txt\n",
+        );
+
+        let check = restriction_check(
+            postconf,
+            "smtpd_sender_restrictions",
+            &[
+                (
+                    "check_sender_access",
+                    "/etc/chatmail-control/blocked_addresses.txt",
+                ),
+                (
+                    "check_sender_access",
+                    "/etc/chatmail-control/blocked_domains.txt",
+                ),
+            ],
+            "postfix:bans:senders",
+            "fix it",
+        );
+
+        assert_eq!(check.status, "ok");
     }
 }
