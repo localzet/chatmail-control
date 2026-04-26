@@ -81,6 +81,10 @@ pub fn user_delete_mailbox_command(address: &str) -> Vec<String> {
     ]
 }
 
+pub fn user_kick_command(address: &str) -> Vec<String> {
+    vec!["doveadm".into(), "kick".into(), "-u".into(), address.into()]
+}
+
 pub fn user_home_command(address: &str) -> Vec<String> {
     vec![
         "doveadm".into(),

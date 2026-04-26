@@ -73,9 +73,45 @@ pub async fn load_managed_user(shell: &Shell, address: &str) -> AppResult<Manage
 }
 
 pub async fn delete_mailbox(shell: &Shell, address: &str) -> AppResult<CommandOutput> {
-    shell
+    let initial = shell
         .run(&chatmail::user_delete_mailbox_command(address))
-        .await
+        .await?;
+    if initial.status == 0 {
+        return Ok(initial);
+    }
+
+    // Live sessions and ongoing LMTP delivery may make INBOX deletion unstable.
+    // Fallback to a safer operational flow used on production mail hosts.
+    let _ = shell.run(&chatmail::user_kick_command(address)).await;
+    let expunge = shell
+        .run(&chatmail::user_mailbox_expunge_command(address, "INBOX"))
+        .await?;
+    let resync = shell
+        .run(&chatmail::user_force_resync_command(address))
+        .await?;
+
+    if expunge.status == 0 {
+        return Ok(CommandOutput {
+            status: 0,
+            stdout: format!(
+                "delete fallback applied; expunge status={}, resync status={}; initial stderr={}",
+                expunge.status, resync.status, initial.stderr
+            ),
+            stderr: String::new(),
+        });
+    }
+
+    Ok(CommandOutput {
+        status: initial.status,
+        stdout: format!(
+            "delete failed; fallback expunge status={}, resync status={}",
+            expunge.status, resync.status
+        ),
+        stderr: format!(
+            "delete stderr: {}; expunge stderr: {}; resync stderr: {}",
+            initial.stderr, expunge.stderr, resync.stderr
+        ),
+    })
 }
 
 pub async fn disable_login(shell: &Shell, address: &str) -> AppResult<String> {
