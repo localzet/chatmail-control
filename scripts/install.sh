@@ -145,34 +145,34 @@ ensure_service_account() {
 }
 
 install_release() {
-  local tmp_dir asset_base archive_file checksum_file bundle_dir
+  local tmp_dir asset_base archive_name checksum_name bundle_dir
 
   tmp_dir="$(mktemp -d)"
-  trap 'rm -rf "${tmp_dir}"' EXIT
+  trap '[[ -n "${tmp_dir:-}" ]] && rm -rf "${tmp_dir}"' EXIT
 
   asset_base="chatmail-control-${VERSION}-linux-amd64"
-  archive_file="${tmp_dir}/${asset_base}.tar.gz"
-  checksum_file="${tmp_dir}/${asset_base}.tar.gz.sha256"
+  archive_name="${asset_base}-bundle.tar.gz"
+  checksum_name="${archive_name}.sha256"
 
-  log "downloading ${asset_base}.tar.gz"
+  log "downloading ${archive_name}"
   curl -fsSL \
-    -o "${archive_file}" \
-    "https://github.com/${REPO}/releases/download/${VERSION}/${asset_base}.tar.gz"
+    -o "${tmp_dir}/${archive_name}" \
+    "https://github.com/${REPO}/releases/download/${VERSION}/${archive_name}"
 
   log "downloading checksum"
   curl -fsSL \
-    -o "${checksum_file}" \
-    "https://github.com/${REPO}/releases/download/${VERSION}/${asset_base}.tar.gz.sha256"
+    -o "${tmp_dir}/${checksum_name}" \
+    "https://github.com/${REPO}/releases/download/${VERSION}/${checksum_name}"
 
   log "verifying checksum"
   (
     cd "${tmp_dir}"
-    sha256sum -c "$(basename "${checksum_file}")"
+    sha256sum -c "${checksum_name}"
   )
 
   log "extracting release bundle"
-  tar -C "${tmp_dir}" -xzf "${archive_file}"
-  bundle_dir="${tmp_dir}/${asset_base}"
+  tar -C "${tmp_dir}" -xzf "${tmp_dir}/${archive_name}"
+  bundle_dir="${tmp_dir}/${asset_base}-bundle"
   [[ -d "${bundle_dir}" ]] || fail "release bundle layout is invalid"
 
   install -d -o "${SERVICE_USER}" -g "${SERVICE_GROUP}" "${INSTALL_ROOT}" "${CONFIG_DIR}" "${STATE_DIR}"
