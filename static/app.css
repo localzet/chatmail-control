@@ -162,6 +162,10 @@ body.compact-mode .data-table td {
   border-left-color: rgba(251, 113, 133, 0.95);
 }
 
+.notice.warning {
+  border-left-color: rgba(250, 204, 21, 0.95);
+}
+
 @keyframes float {
   0% { transform: translateY(0) translateX(0); }
   50% { transform: translateY(-14px) translateX(8px); }

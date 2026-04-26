@@ -210,6 +210,62 @@ pub async fn set_active_for_value(
     execute_reload_commands(pool, shell, Some(update.admin_id), update.ip_address).await
 }
 
+pub async fn ensure_active_address_ban(
+    pool: &SqlitePool,
+    shell: &Shell,
+    config: &Config,
+    admin_id: i64,
+    address: &str,
+    reason: &str,
+    ip_address: Option<&str>,
+) -> AppResult<Vec<String>> {
+    let updated = sqlx::query(
+        "UPDATE bans
+         SET is_active = 1, reason = ?, expires_at = NULL
+         WHERE kind = 'address' AND value = ?",
+    )
+    .bind(reason)
+    .bind(address)
+    .execute(pool)
+    .await?;
+
+    if updated.rows_affected() == 0 {
+        sqlx::query(
+            "INSERT INTO bans (kind, value, reason, created_by, expires_at, is_active)
+             VALUES ('address', ?, ?, ?, NULL, 1)",
+        )
+        .bind(address)
+        .bind(reason)
+        .bind(admin_id)
+        .execute(pool)
+        .await?;
+        audit::log_event(
+            pool,
+            Some(admin_id),
+            "ban_added",
+            "address",
+            address,
+            json!({ "reason": reason, "auto": true, "source": "account_delete" }),
+            ip_address,
+        )
+        .await?;
+    } else {
+        audit::log_event(
+            pool,
+            Some(admin_id),
+            "ban_reactivated",
+            "address",
+            address,
+            json!({ "reason": reason, "auto": true, "source": "account_delete" }),
+            ip_address,
+        )
+        .await?;
+    }
+
+    sync_policy_files(pool, config).await?;
+    execute_reload_commands(pool, shell, Some(admin_id), ip_address).await
+}
+
 pub async fn sync_policy_files(pool: &SqlitePool, config: &Config) -> AppResult<()> {
     let active_bans = sqlx::query_as::<_, Ban>(
         "SELECT id, kind, value, reason, created_by, created_at, expires_at, is_active

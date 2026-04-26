@@ -263,6 +263,8 @@ Important:
 
 - `Delete user` in UI removes the resolved maildir home path (account lifecycle deletion for file-based chatmail
   setups);
+- before lifecycle deletion, the app auto-activates an address ban and reloads mail services to reduce immediate
+  mailbox recreation from incoming traffic;
 - `Clear INBOX` in UI only clears mailbox contents through Dovecot and does not remove the account itself;
 - many deployments will recreate or continue listing the user after that command;
 - lifecycle delete only removes the resolved maildir home path and refuses paths outside `/home/vmail/` and
@@ -402,6 +404,8 @@ If one of these tools is unavailable, the page still opens and shows a warning o
 - Users page is empty: run `doveadm user '*'` manually on the host to verify permissions/output.
 - Delete user does nothing: use `Manage` and verify that `doveadm user -u <address> -f home` returns a real
   maildir path; this action removes that path.
+- Delete user fails with `Directory not empty`: update to the latest version; deletion now uses rename-to-tombstone
+  and retry cleanup to avoid race with in-flight mail writes.
 - Clear INBOX does nothing: this action only deletes/expunges mailbox contents and does not remove the account.
 - Login disable/enable fails: verify user home contains `password` or `password.blocked` and service has write access.
 - Lifecycle delete fails: verify `doveadm user -u <address> -f home` returns a path under `/home/vmail/` or

@@ -1,8 +1,10 @@
 use std::path::{Path, PathBuf};
+use std::time::{Duration as StdDuration, SystemTime, UNIX_EPOCH};
 
 use regex::Regex;
 use serde::Serialize;
 use tokio::fs;
+use tokio::time::sleep;
 
 use crate::{
     chatmail,
@@ -169,8 +171,30 @@ pub async fn delete_account_lifecycle(shell: &Shell, address: &str) -> AppResult
     if !home_path.exists() {
         return Ok(format!("already absent {}", home_path.display()));
     }
-    fs::remove_dir_all(&home_path).await?;
-    Ok(format!("deleted {}", home_path.display()))
+
+    // Best effort: close active sessions before touching filesystem.
+    let _ = shell.run(&chatmail::user_kick_command(address)).await;
+
+    let file_name = home_path
+        .file_name()
+        .map(|v| v.to_string_lossy().to_string())
+        .ok_or_else(|| AppError::Validation("invalid user home directory".into()))?;
+    let parent = home_path
+        .parent()
+        .ok_or_else(|| AppError::Validation("invalid user home parent".into()))?;
+    let ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_else(|_| StdDuration::from_secs(0))
+        .as_secs();
+    let tombstone = parent.join(format!(".deleted-{file_name}-{ts}"));
+
+    fs::rename(&home_path, &tombstone).await?;
+    remove_dir_all_with_retries(&tombstone, 8).await?;
+    Ok(format!(
+        "deleted {} via {}",
+        home_path.display(),
+        tombstone.display()
+    ))
 }
 
 pub async fn expunge_mailbox(
@@ -293,4 +317,28 @@ fn is_login_disabled(home: &str) -> bool {
     let password = Path::new(home).join("password");
     let blocked = Path::new(home).join("password.blocked");
     !password.exists() && blocked.exists()
+}
+
+async fn remove_dir_all_with_retries(path: &Path, attempts: usize) -> AppResult<()> {
+    for attempt in 0..attempts {
+        match fs::remove_dir_all(path).await {
+            Ok(_) => return Ok(()),
+            Err(err) => {
+                let should_retry = err.kind() == std::io::ErrorKind::DirectoryNotEmpty
+                    || err.kind() == std::io::ErrorKind::Other;
+                if !should_retry || attempt + 1 == attempts {
+                    return Err(AppError::Internal(format!(
+                        "failed to remove {}: {}",
+                        path.display(),
+                        err
+                    )));
+                }
+                sleep(StdDuration::from_millis(250)).await;
+            }
+        }
+    }
+    Err(AppError::Internal(format!(
+        "failed to remove {} after retries",
+        path.display()
+    )))
 }

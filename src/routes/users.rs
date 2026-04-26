@@ -162,6 +162,16 @@ fn status_banner(status: Option<&str>) -> (Option<String>, Option<String>, Optio
             Some("User account deleted.".into()),
             Some("The chatmail maildir path is now absent.".into()),
         ),
+        Some("account-deleted-banwarn") => (
+            Some("warning".into()),
+            Some("User deleted with warnings.".into()),
+            Some("Maildir was deleted, but auto-ban/reload returned a warning. Check audit log.".into()),
+        ),
+        Some("account-delete-failed") => (
+            Some("error".into()),
+            Some("Delete user failed.".into()),
+            Some("Account deletion did not finish. Check audit log for detailed stderr/error.".into()),
+        ),
         Some("mailbox-expunged") => (
             Some("success".into()),
             Some("Mailbox expunged.".into()),
@@ -236,18 +246,74 @@ async fn delete_account(
 ) -> crate::error::AppResult<impl IntoResponse> {
     let current = auth::require_admin(&state, &jar).await?;
     auth::validate_csrf(&current, &form.csrf_token)?;
-    let details = users::delete_account_lifecycle(&state.shell, &form.address).await?;
-    audit::log_event(
+
+    let mut ban_warnings = Vec::new();
+    match crate::bans::ensure_active_address_ban(
         &state.pool,
-        Some(current.admin.id),
-        "account_lifecycle_deleted",
-        "user",
+        &state.shell,
+        &state.config,
+        current.admin.id,
         &form.address,
-        json!({ "details": details }),
+        "auto-blocked on account delete",
         None,
     )
-    .await?;
-    Ok(Redirect::to("/admin/users?status=account-deleted"))
+    .await
+    {
+        Ok(warnings) => {
+            ban_warnings = warnings;
+        }
+        Err(err) => {
+            let err_text = err.to_string();
+            ban_warnings.push(err_text.clone());
+            audit::log_event(
+                &state.pool,
+                Some(current.admin.id),
+                "account_delete_preban_failed",
+                "user",
+                &form.address,
+                json!({ "error": err_text }),
+                None,
+            )
+            .await?;
+        }
+    }
+
+    match users::delete_account_lifecycle(&state.shell, &form.address).await {
+        Ok(details) => {
+            audit::log_event(
+                &state.pool,
+                Some(current.admin.id),
+                "account_lifecycle_deleted",
+                "user",
+                &form.address,
+                json!({ "details": details, "ban_warnings": ban_warnings }),
+                None,
+            )
+            .await?;
+            if ban_warnings.is_empty() {
+                Ok(Redirect::to("/admin/users?status=account-deleted"))
+            } else {
+                Ok(Redirect::to("/admin/users?status=account-deleted-banwarn"))
+            }
+        }
+        Err(err) => {
+            let err_text = err.to_string();
+            audit::log_event(
+                &state.pool,
+                Some(current.admin.id),
+                "account_lifecycle_delete_failed",
+                "user",
+                &form.address,
+                json!({ "error": err_text, "ban_warnings": ban_warnings }),
+                None,
+            )
+            .await?;
+            Ok(Redirect::to(&format!(
+                "/admin/users?status=account-delete-failed&manage={}",
+                form.address
+            )))
+        }
+    }
 }
 
 async fn expunge_mailbox(
