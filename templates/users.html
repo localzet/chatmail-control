@@ -34,6 +34,7 @@
             <td>{{ user.last_seen.as_deref().unwrap_or("unavailable") }}</td>
             <td class="actions">
                 <a class="button secondary" href="/admin/users?metadata={{ user.address }}">View metadata</a>
+                <a class="button secondary" href="/admin/users?manage={{ user.address }}">Manage</a>
                 {% if user.blocked %}
                 <form action="/admin/users/unblock" method="post">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -67,4 +68,73 @@
 </section>
 {% when None %}
 {% endmatch %}
+
+{% if let Some(managed) = managed_user %}
+<section class="card">
+    <h3>Manage {{ managed.address }}</h3>
+    <p>Home: {{ managed.home_path.as_deref().unwrap_or("unavailable") }}</p>
+    <p>Login state: {% if managed.login_disabled %}disabled{% else %}enabled{% endif %}</p>
+    <div class="actions">
+        {% if managed.login_disabled %}
+        <form action="/admin/users/account-enable" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="address" value="{{ managed.address }}">
+            <button class="button secondary" type="submit">Enable login</button>
+        </form>
+        {% else %}
+        <form action="/admin/users/account-disable" method="post" onsubmit="return confirm('Disable login for this account?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="address" value="{{ managed.address }}">
+            <button class="button secondary" type="submit">Disable login</button>
+        </form>
+        {% endif %}
+        <form action="/admin/users/quota-recalc" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="address" value="{{ managed.address }}">
+            <button class="button secondary" type="submit">Quota recalc</button>
+        </form>
+        <form action="/admin/users/force-resync" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="address" value="{{ managed.address }}">
+            <button class="button secondary" type="submit">Force resync</button>
+        </form>
+        <form action="/admin/users/account-delete" method="post" onsubmit="return confirm('Delete account lifecycle directory? This is destructive.');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="address" value="{{ managed.address }}">
+            <button class="button danger" type="submit">Delete account lifecycle</button>
+        </form>
+    </div>
+</section>
+
+<section class="card">
+    <h3>Mailboxes</h3>
+    {% if managed.mailboxes.is_empty() %}
+    <p>No mailbox list available.</p>
+    {% else %}
+    <table>
+        <thead>
+        <tr>
+            <th>Name</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for mailbox in managed.mailboxes %}
+        <tr>
+            <td>{{ mailbox }}</td>
+            <td class="actions">
+                <form action="/admin/users/mailbox-expunge" method="post" onsubmit="return confirm('Expunge all messages from this mailbox?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="address" value="{{ managed.address }}">
+                    <input type="hidden" name="mailbox" value="{{ mailbox }}">
+                    <button class="button danger" type="submit">Expunge</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</section>
+{% endif %}
 {% endblock %}

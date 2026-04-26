@@ -10,7 +10,10 @@ This is not webmail, not a mailbox client, and not a Mailcow/PostfixAdmin replac
 - admin login/logout with cookie sessions and Argon2 password hashes;
 - dashboard with service state, queue size, user count, active bans, and recent audit events;
 - user/mailbox listing through built-in `doveadm` commands;
+- account lifecycle and auth-state controls for chatmail maildir users (`disable/enable login`, lifecycle delete);
+- Dovecot mailbox operations (`list`, `expunge`, `quota recalc`, `force-resync`);
 - block/unblock address, domain, IP, and subnet bans with file export and built-in reload behavior;
+- service control page for `status/reload/restart` and log tail;
 - registration settings stored in SQLite and exported into a generated policy file;
 - invite management with token export;
 - logs viewer backed by built-in `journalctl` sources for chatmail services;
@@ -34,6 +37,7 @@ This is not webmail, not a mailbox client, and not a Mailcow/PostfixAdmin replac
 - Shell integration is always argv-based. Commands are never executed through a shell.
 - The UI degrades to `unavailable` when an external command is missing or fails.
 - Command catalog is built into the application for chatmail host deployments and is not configurable from TOML.
+- Postfix ban-policy wiring can be synchronized from Settings with a safe merge strategy.
 - Shell command timeout is fixed to 10 seconds in MVP.
 - Health checks tolerate missing local tools such as `systemctl`, `postqueue`, or `openssl` and render warnings instead
   of crashing.
@@ -102,6 +106,12 @@ Install a specific version:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/localzet/chatmail-control/main/scripts/install.sh | \
   sudo bash -s -- --version v0.1.0
+```
+
+Upgrade an existing installation in place and restart the service:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/localzet/chatmail-control/main/scripts/update.sh | sudo bash
 ```
 
 What the installer does:
@@ -220,6 +230,11 @@ Users:
 - doveadm mailbox status -u <address> messages INBOX
 - doveadm user -u <address> *
 - doveadm mailbox delete -u <address> -s INBOX
+- doveadm user -u <address> -f home
+- doveadm mailbox list -u <address>
+- doveadm expunge -u <address> mailbox <mailbox> all
+- doveadm quota recalc -u <address>
+- doveadm force-resync -u <address> *
 
 Bans reload:
 - systemctl reload postfix
@@ -227,6 +242,13 @@ Bans reload:
 
 Settings reload:
 - systemctl reload doveauth
+
+Postfix policy sync:
+- postconf -h smtpd_recipient_restrictions
+- postconf -h smtpd_sender_restrictions
+- postconf -h smtpd_client_restrictions
+- postconf -e "<setting> = <merged_restrictions>"
+- systemctl reload postfix
 
 Logs:
 - journalctl -u dovecot -n <N> --no-pager
@@ -242,7 +264,8 @@ Important:
 - the built-in mailbox delete action deletes the `INBOX` mailbox through Dovecot, not the entire account from your
   chatmail stack;
 - many deployments will recreate or continue listing the user after that command;
-- account lifecycle operations in `chatmaild/cmdeploy` are intentionally not auto-managed by MVP.
+- lifecycle delete only removes the resolved maildir home path and refuses paths outside `/home/vmail/` and
+  `/var/vmail/`.
 
 ## Reverse Proxy Example
 
@@ -378,6 +401,10 @@ If one of these tools is unavailable, the page still opens and shows a warning o
 - Users page is empty: run `doveadm user '*'` manually on the host to verify permissions/output.
 - Delete returns to the Users page but nothing was removed: the app runs built-in
   `doveadm mailbox delete -u <address> -s INBOX`, which does not remove the full account lifecycle.
+- Login disable/enable fails: verify user home contains `password` or `password.blocked` and service has write access.
+- Lifecycle delete fails: verify `doveadm user -u <address> -f home` returns a path under `/home/vmail/` or
+  `/var/vmail/`.
+- Expunge fails: verify mailbox exists in `doveadm mailbox list -u <address>` and use an exact mailbox name.
 - `doveadm user '*'` works as `root` but not as an unprivileged user: expected on many real systems; the provided
   deployment model runs the service with host-level privileges.
 - Mailbox metrics show `unavailable`: the optional command failed or returned unsupported output.

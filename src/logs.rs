@@ -14,7 +14,23 @@ pub async fn read_logs(
     query: Option<&str>,
     limit: usize,
 ) -> Vec<LogLine> {
-    let command = chatmail::log_source_command(source, limit);
+    read_journal_unit(shell, source.unit, query, limit).await
+}
+
+pub async fn read_journal_unit(
+    shell: &Shell,
+    unit: &str,
+    query: Option<&str>,
+    limit: usize,
+) -> Vec<LogLine> {
+    let command = vec![
+        "journalctl".into(),
+        "-u".into(),
+        unit.to_string(),
+        "-n".into(),
+        limit.to_string(),
+        "--no-pager".into(),
+    ];
     let output = shell.run(&command).await;
     let mut lines = match output {
         Ok(output) => output

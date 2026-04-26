@@ -1,6 +1,13 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% if let Some(kind) = status_kind.as_deref() %}
+<section class="card notice {{ kind }}">
+    {% if let Some(title) = status_title.as_deref() %}
+    <strong>{{ title }}</strong>
+    {% endif %}
+</section>
+{% endif %}
 <section class="card">
     <form class="grid-form" action="/admin/settings" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -33,6 +40,15 @@
             <textarea name="notes" rows="5">{{ settings.notes }}</textarea>
         </label>
         <button class="button" type="submit">Save settings</button>
+    </form>
+</section>
+
+<section class="card">
+    <h3>Postfix policy wiring</h3>
+    <p>Safely merge ban access checks into current Postfix restriction chains without replacing unrelated rules.</p>
+    <form action="/admin/settings/postfix-sync" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="button secondary" type="submit">Apply/repair Postfix ban policy</button>
     </form>
 </section>
 {% endblock %}

@@ -81,6 +81,59 @@ pub fn user_delete_mailbox_command(address: &str) -> Vec<String> {
     ]
 }
 
+pub fn user_home_command(address: &str) -> Vec<String> {
+    vec![
+        "doveadm".into(),
+        "user".into(),
+        "-u".into(),
+        address.into(),
+        "-f".into(),
+        "home".into(),
+    ]
+}
+
+pub fn user_mailbox_list_command(address: &str) -> Vec<String> {
+    vec![
+        "doveadm".into(),
+        "mailbox".into(),
+        "list".into(),
+        "-u".into(),
+        address.into(),
+    ]
+}
+
+pub fn user_mailbox_expunge_command(address: &str, mailbox: &str) -> Vec<String> {
+    vec![
+        "doveadm".into(),
+        "expunge".into(),
+        "-u".into(),
+        address.into(),
+        "mailbox".into(),
+        mailbox.into(),
+        "all".into(),
+    ]
+}
+
+pub fn user_quota_recalc_command(address: &str) -> Vec<String> {
+    vec![
+        "doveadm".into(),
+        "quota".into(),
+        "recalc".into(),
+        "-u".into(),
+        address.into(),
+    ]
+}
+
+pub fn user_force_resync_command(address: &str) -> Vec<String> {
+    vec![
+        "doveadm".into(),
+        "force-resync".into(),
+        "-u".into(),
+        address.into(),
+        "*".into(),
+    ]
+}
+
 pub fn bans_reload_commands() -> Vec<Vec<String>> {
     vec![
         vec!["systemctl".into(), "reload".into(), "postfix".into()],
@@ -92,6 +145,22 @@ pub fn settings_reload_commands() -> Vec<Vec<String>> {
     vec![vec!["systemctl".into(), "reload".into(), "doveauth".into()]]
 }
 
+pub fn systemctl_command(action: &str, unit: &str) -> Vec<String> {
+    vec!["systemctl".into(), action.into(), unit.into()]
+}
+
+pub fn postfix_show_param_command(name: &str) -> Vec<String> {
+    vec!["postconf".into(), "-h".into(), name.into()]
+}
+
+pub fn postfix_set_param_command(name: &str, value: &str) -> Vec<String> {
+    vec!["postconf".into(), "-e".into(), format!("{name} = {value}")]
+}
+
+pub fn postfix_reload_command() -> Vec<String> {
+    vec!["systemctl".into(), "reload".into(), "postfix".into()]
+}
+
 pub fn log_source_by_name(name: Option<&str>) -> LogSource {
     if let Some(name) = name {
         if let Some(source) = LOG_SOURCES.iter().find(|source| source.name == name) {
@@ -99,15 +168,4 @@ pub fn log_source_by_name(name: Option<&str>) -> LogSource {
         }
     }
     LOG_SOURCES[0]
-}
-
-pub fn log_source_command(source: LogSource, limit: usize) -> Vec<String> {
-    vec![
-        "journalctl".into(),
-        "-u".into(),
-        source.unit.into(),
-        "-n".into(),
-        limit.to_string(),
-        "--no-pager".into(),
-    ]
 }

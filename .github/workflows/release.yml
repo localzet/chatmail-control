@@ -65,7 +65,9 @@ jobs:
           cp README.md config.example.toml .env.example "$BUNDLE_DIR/"
           cp -r migrations templates static systemd "$BUNDLE_DIR/"
           cp scripts/install.sh "dist/install.sh"
+          cp scripts/update.sh "dist/update.sh"
           chmod +x "dist/install.sh"
+          chmod +x "dist/update.sh"
           cp target/release/chatmail-control "$RAW_BINARY"
           tar -C dist -czf "dist/chatmail-control-${VERSION}-linux-amd64-bundle.tar.gz" "chatmail-control-${VERSION}-linux-amd64-bundle"
           sha256sum "$RAW_BINARY" > "${RAW_BINARY}.sha256"
@@ -83,6 +85,7 @@ jobs:
         with:
           files: |
             dist/install.sh
+            dist/update.sh
             dist/chatmail-control-*
             dist/*.tar.gz
             dist/*.sha256

@@ -8,6 +8,7 @@ mod error;
 mod health;
 mod invites;
 mod logs;
+mod postfix;
 mod routes;
 mod services;
 mod settings;
@@ -109,7 +110,7 @@ async fn run_admin_command(command: AdminCommand) -> anyhow::Result<()> {
     let path = args
         .config
         .clone()
-        .unwrap_or_else(|| PathBuf::from("config.toml"));
+        .unwrap_or_else(|| PathBuf::from("/etc/chatmail-control/config.toml"));
     let config = Config::load(path)?;
     let pool = db::connect(&config.server.database_url).await?;
     auth::upsert_admin(&pool, &args.username, &args.password).await?;

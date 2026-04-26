@@ -4,6 +4,7 @@ pub mod dashboard;
 pub mod health;
 pub mod invites;
 pub mod logs;
+pub mod services;
 pub mod settings;
 pub mod users;
 
@@ -17,6 +18,7 @@ pub fn router() -> Router<crate::AppState> {
         .merge(bans::router())
         .merge(invites::router())
         .merge(logs::router())
+        .merge(services::router())
         .merge(health::router())
         .merge(settings::router())
 }

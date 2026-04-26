@@ -1,7 +1,7 @@
 use serde::Serialize;
 use sqlx::SqlitePool;
 
-use crate::{config::Config, error::AppResult, shell::Shell};
+use crate::{chatmail, config::Config, error::AppResult, shell::Shell};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ServiceStatus {
@@ -16,6 +16,15 @@ pub struct DashboardStats {
     pub mail_queue_size: usize,
     pub users_count: usize,
     pub active_bans_count: i64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ServiceActionResult {
+    pub service: String,
+    pub action: String,
+    pub status: i32,
+    pub stdout: String,
+    pub stderr: String,
 }
 
 pub async fn collect_dashboard_stats(
@@ -69,5 +78,26 @@ pub async fn collect_dashboard_stats(
         mail_queue_size,
         users_count,
         active_bans_count,
+    })
+}
+
+pub async fn run_service_action(
+    shell: &Shell,
+    service: &str,
+    action: &str,
+) -> AppResult<ServiceActionResult> {
+    let argv = match action {
+        "status" => chatmail::systemctl_command("status", service),
+        "restart" => chatmail::systemctl_command("restart", service),
+        "reload" => chatmail::systemctl_command("reload", service),
+        _ => chatmail::systemctl_command("status", service),
+    };
+    let output = shell.run(&argv).await?;
+    Ok(ServiceActionResult {
+        service: service.to_string(),
+        action: action.to_string(),
+        status: output.status,
+        stdout: output.stdout,
+        stderr: output.stderr,
     })
 }

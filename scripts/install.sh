@@ -188,7 +188,7 @@ Chatmail Control ${VERSION} installed successfully.
 Next steps:
   1. Edit ${CONFIG_DIR}/config.toml
   2. Create the first admin:
-     ${BINARY_PATH} admin create --config ${CONFIG_DIR}/config.toml --username admin --password 'CHANGE_ME'
+     ${BINARY_PATH} admin create --username admin --password 'CHANGE_ME'
   3. Start or restart the service:
      sudo systemctl restart chatmail-control
 
