@@ -13,7 +13,7 @@
         </label>
         <label class="text-sm text-slate-300">
             Search
-            <input class="form-input" type="text" name="q" value="{{ query }}">
+            <input id="logs-q" class="form-input" type="text" name="q" value="{{ query }}">
         </label>
         <label class="text-sm text-slate-300">
             Lines
@@ -23,6 +23,12 @@
             <button class="btn btn-primary w-full" type="submit">Refresh</button>
         </div>
     </form>
+    <div class="mt-3 flex flex-wrap gap-2">
+        <button class="btn btn-soft" type="button" onclick="document.getElementById('logs-q').value='error'; this.closest('section').querySelector('form').submit();">Errors</button>
+        <button class="btn btn-soft" type="button" onclick="document.getElementById('logs-q').value='warn'; this.closest('section').querySelector('form').submit();">Warnings</button>
+        <button class="btn btn-soft" type="button" onclick="document.getElementById('logs-q').value='reject'; this.closest('section').querySelector('form').submit();">Rejects</button>
+        <button class="btn btn-soft" type="button" onclick="document.getElementById('logs-q').value=''; this.closest('section').querySelector('form').submit();">Clear</button>
+    </div>
 </section>
 <section class="glass-card mt-4">
   <pre class="log-view">{% for line in lines %}<span class="log-{{ line.level }}">{{ line.text }}</span>

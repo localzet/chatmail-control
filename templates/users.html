@@ -13,8 +13,11 @@
 {% endif %}
 <section class="glass-card {% if status_kind.is_some() %}mt-4{% endif %} overflow-hidden">
     <h3 class="text-lg font-semibold text-white">Mailboxes</h3>
+    <div class="mt-3 flex flex-wrap gap-2">
+        <input class="form-input max-w-sm" type="text" placeholder="Quick filter users..." data-filter-target="users-table">
+    </div>
     <div class="mt-3 overflow-x-auto">
-    <table class="w-full text-sm">
+    <table id="users-table" class="data-table w-full text-sm">
         <thead>
         <tr class="border-b border-white/10 text-left text-xs uppercase tracking-wider text-slate-400">
             <th class="px-3 py-2">Address</th>
@@ -120,7 +123,7 @@
     <p class="mt-2 text-sm text-slate-400">No mailbox list available.</p>
     {% else %}
     <div class="mt-3 overflow-x-auto">
-    <table class="w-full text-sm">
+    <table class="data-table w-full text-sm">
         <thead>
         <tr class="border-b border-white/10 text-left text-xs uppercase tracking-wider text-slate-400">
             <th class="px-3 py-2">Name</th>

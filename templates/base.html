@@ -4,6 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ page_title }} · chatmail-control</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -46,13 +49,54 @@
     <main class="min-w-0 animate-fade-in">
         <header class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-xl">
             <h2 class="text-xl font-semibold tracking-wide text-white">{{ page_title }}</h2>
-            <form action="/logout" method="post">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <button class="btn btn-soft" type="submit">Logout</button>
-            </form>
+            <div class="flex items-center gap-2">
+                <button id="compact-toggle" class="btn btn-soft" type="button">Compact mode</button>
+                <form action="/logout" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button class="btn btn-soft" type="submit">Logout</button>
+                </form>
+            </div>
         </header>
         {% block content %}{% endblock %}
     </main>
 </div>
+<script>
+(() => {
+  const body = document.body;
+  const compactKey = "cmControlCompactMode";
+  const compactBtn = document.getElementById("compact-toggle");
+
+  function applyCompact(isCompact) {
+    body.classList.toggle("compact-mode", isCompact);
+    if (compactBtn) {
+      compactBtn.textContent = isCompact ? "Comfort mode" : "Compact mode";
+    }
+  }
+
+  applyCompact(localStorage.getItem(compactKey) === "1");
+  if (compactBtn) {
+    compactBtn.addEventListener("click", () => {
+      const next = !body.classList.contains("compact-mode");
+      localStorage.setItem(compactKey, next ? "1" : "0");
+      applyCompact(next);
+    });
+  }
+
+  document.querySelectorAll("[data-filter-target]").forEach((input) => {
+    const targetId = input.getAttribute("data-filter-target");
+    const table = targetId ? document.getElementById(targetId) : null;
+    if (!table) return;
+    const rows = Array.from(table.querySelectorAll("tbody tr"));
+    const runFilter = () => {
+      const query = input.value.trim().toLowerCase();
+      rows.forEach((row) => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = !query || text.includes(query) ? "" : "none";
+      });
+    };
+    input.addEventListener("input", runFilter);
+  });
+})();
+</script>
 </body>
 </html>

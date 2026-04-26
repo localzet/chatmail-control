@@ -3,7 +3,7 @@
 }
 
 body {
-  font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "Nunito", "Segoe UI", Roboto, Arial, sans-serif;
 }
 
 .glass-card {
@@ -115,6 +115,29 @@ body {
   color: #dbeafe;
 }
 
+.data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(8, 16, 42, 0.96);
+  backdrop-filter: blur(6px);
+}
+
+body.compact-mode .glass-card {
+  padding: 0.75rem;
+}
+
+body.compact-mode .btn {
+  padding: 0.42rem 0.7rem;
+  font-size: 0.78rem;
+}
+
+body.compact-mode .data-table th,
+body.compact-mode .data-table td {
+  padding-top: 0.38rem !important;
+  padding-bottom: 0.38rem !important;
+}
+
 .log-error {
   color: #fecdd3;
 }
@@ -181,4 +204,3 @@ body {
 ::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
 }
-
