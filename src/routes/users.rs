@@ -20,6 +20,7 @@ struct ActionForm {
 #[derive(Debug, Deserialize, Default)]
 struct UsersQuery {
     metadata: Option<String>,
+    status: Option<String>,
 }
 
 #[derive(Template)]
@@ -31,6 +32,9 @@ struct UsersTemplate {
     csrf_token: String,
     users: Vec<crate::users::UserMailbox>,
     selected_metadata: Option<String>,
+    status_kind: Option<String>,
+    status_title: Option<String>,
+    status_message: Option<String>,
 }
 
 pub fn router() -> Router<AppState> {
@@ -55,6 +59,7 @@ async fn index(
             .find(|user| user.address == address)
             .and_then(|user| user.metadata.clone())
     });
+    let (status_kind, status_title, status_message) = status_banner(query.status.as_deref());
     Ok(UsersTemplate {
         page_title: "Users".into(),
         current_path: "/admin/users".into(),
@@ -62,6 +67,9 @@ async fn index(
         csrf_token: current.session.csrf_token,
         users,
         selected_metadata,
+        status_kind,
+        status_title,
+        status_message,
     })
 }
 
@@ -72,6 +80,21 @@ async fn delete_mailbox(
 ) -> crate::error::AppResult<impl IntoResponse> {
     let current = auth::require_admin(&state, &jar).await?;
     auth::validate_csrf(&current, &form.csrf_token)?;
+
+    if state.config.users.delete_command.is_empty() {
+        audit::log_event(
+            &state.pool,
+            Some(current.admin.id),
+            "mailbox_delete_failed",
+            "user",
+            &form.address,
+            json!({ "error": "delete_command is empty" }),
+            None,
+        )
+        .await?;
+        return Ok(Redirect::to("/admin/users?status=delete-command-missing"));
+    }
+
     let output = state
         .shell
         .run_with_replacements(
@@ -79,17 +102,51 @@ async fn delete_mailbox(
             &[("{address}", &form.address)],
         )
         .await?;
+    let action = if output.status == 0 {
+        "mailbox_deleted"
+    } else {
+        "mailbox_delete_failed"
+    };
     audit::log_event(
         &state.pool,
         Some(current.admin.id),
-        "mailbox_deleted",
+        action,
         "user",
         &form.address,
         json!({ "status": output.status, "stdout": output.stdout, "stderr": output.stderr }),
         None,
     )
     .await?;
-    Ok(Redirect::to("/admin/users"))
+
+    if output.status == 0 {
+        Ok(Redirect::to("/admin/users?status=delete-ok"))
+    } else {
+        Ok(Redirect::to("/admin/users?status=delete-failed"))
+    }
+}
+
+fn status_banner(status: Option<&str>) -> (Option<String>, Option<String>, Option<String>) {
+    match status {
+        Some("delete-ok") => (
+            Some("success".into()),
+            Some("Delete command completed.".into()),
+            Some("The configured mailbox delete command returned exit code 0.".into()),
+        ),
+        Some("delete-failed") => (
+            Some("error".into()),
+            Some("Delete command failed.".into()),
+            Some(
+                "The configured mailbox delete command returned a non-zero exit code. Check the audit log or service journal for stderr/stdout."
+                    .into(),
+            ),
+        ),
+        Some("delete-command-missing") => (
+            Some("error".into()),
+            Some("Delete command failed.".into()),
+            Some("Set [users].delete_command in the config before using mailbox deletion.".into()),
+        ),
+        _ => (None, None, None),
+    }
 }
 
 async fn block_user(

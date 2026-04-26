@@ -1,6 +1,16 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% if let Some(kind) = status_kind.as_deref() %}
+<section class="card notice {{ kind }}">
+  {% if let Some(title) = status_title.as_deref() %}
+  <strong>{{ title }}</strong>
+  {% endif %}
+  {% if let Some(message) = status_message.as_deref() %}
+  <p>{{ message }}</p>
+  {% endif %}
+</section>
+{% endif %}
 <section class="card">
   <h3>Mailboxes</h3>
   <table>
@@ -40,7 +50,7 @@
           <form action="/admin/users/delete" method="post" onsubmit="return confirm('Delete mailbox?');">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="address" value="{{ user.address }}">
-            <button class="button danger" type="submit">Delete</button>
+            <button class="button danger" type="submit">Delete via command</button>
           </form>
         </td>
       </tr>

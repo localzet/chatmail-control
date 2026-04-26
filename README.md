@@ -216,6 +216,12 @@ delete_command = ["doveadm", "mailbox", "delete", "-u", "{address}", "-s", "INBO
 metadata_command = ["doveadm", "user", "-u", "{address}", "*"]
 ```
 
+Important:
+
+- the default `delete_command` above deletes the `INBOX` mailbox through Dovecot, not the entire account from your chatmail stack;
+- many deployments will recreate or continue listing the user after that command;
+- if you want real account removal, replace `delete_command` with the host-specific command that removes the mailbox/account in your actual provisioning stack.
+
 ## Reverse Proxy Example
 
 ```nginx
@@ -343,6 +349,7 @@ If one of these tools is unavailable, the page still opens and shows a warning o
 - Login returns `401`: verify that the admin exists and the password was set with the CLI.
 - `/admin` returns `401`: expected without a valid login session, use `/login`.
 - Users page is empty: check `users.list_command` output manually on the host.
+- Delete returns to the Users page but nothing was removed: the app only runs `[users].delete_command`; the default example deletes `INBOX`, not the whole account.
 - `doveadm user '*'` works as `root` but not as an unprivileged user: expected on many real systems; the provided deployment model runs the service with host-level privileges.
 - Mailbox metrics show `unavailable`: the optional command failed or returned unsupported output.
 - Health page shows warnings: verify that required host tools and services are available on the mail server.

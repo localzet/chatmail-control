@@ -95,6 +95,22 @@ pre, code, input, select, textarea, button {
   margin-bottom: 20px;
 }
 
+.notice {
+  border-left: 6px solid var(--line);
+}
+
+.notice.success {
+  border-left-color: var(--ok);
+}
+
+.notice.error {
+  border-left-color: var(--danger);
+}
+
+.notice p {
+  margin-bottom: 0;
+}
+
 .stats-grid,
 .service-grid {
   display: grid;
