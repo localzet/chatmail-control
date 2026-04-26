@@ -71,88 +71,112 @@
     </div>
 </section>
 
-{% match selected_metadata %}
-{% when Some with (metadata) %}
-<section class="glass-card mt-4">
-    <h3 class="text-lg font-semibold text-white">Metadata</h3>
-    <pre class="mt-3 max-h-72 overflow-auto whitespace-pre-wrap rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-slate-300">{{ metadata }}</pre>
-</section>
-{% when None %}
-{% endmatch %}
+{% if managed_user.is_some() || selected_metadata.is_some() %}
+<section id="users-modal-backdrop" class="fixed inset-0 z-40 flex items-center justify-center bg-navy-950/70 p-4 backdrop-blur-sm">
+    <div id="users-modal" class="glass-card z-50 max-h-[90vh] w-full max-w-5xl overflow-auto border border-white/20">
+        <div class="mb-4 flex items-start justify-between gap-3 border-b border-white/10 pb-3">
+            {% if let Some(managed) = managed_user %}
+            <div>
+                <h3 class="text-lg font-semibold text-white">Manage {{ managed.address }}</h3>
+                <p class="mt-1 text-sm text-slate-300">Home: {{ managed.home_path.as_deref().unwrap_or("unavailable") }}</p>
+                <p class="mt-1 text-sm text-slate-300">Login state: {% if managed.login_disabled %}disabled{% else %}enabled{% endif %}</p>
+            </div>
+            {% else %}
+            <h3 class="text-lg font-semibold text-white">Metadata</h3>
+            {% endif %}
+            <a href="/admin/users" class="btn btn-soft">Close</a>
+        </div>
 
-{% if let Some(managed) = managed_user %}
-<section class="glass-card mt-4">
-    <h3 class="text-lg font-semibold text-white">Manage {{ managed.address }}</h3>
-    <p class="mt-2 text-sm text-slate-300">Home: {{ managed.home_path.as_deref().unwrap_or("unavailable") }}</p>
-    <p class="mt-1 text-sm text-slate-300">Login state: {% if managed.login_disabled %}disabled{% else %}enabled{% endif %}</p>
-    <div class="mt-3 flex flex-wrap gap-2">
-        {% if managed.login_disabled %}
-        <form action="/admin/users/account-enable" method="post">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="address" value="{{ managed.address }}">
-            <button class="btn btn-soft" type="submit">Enable login</button>
-        </form>
-        {% else %}
-        <form action="/admin/users/account-disable" method="post" onsubmit="return confirm('Disable login for this account?');">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="address" value="{{ managed.address }}">
-            <button class="btn btn-soft" type="submit">Disable login</button>
-        </form>
+        {% if let Some(managed) = managed_user %}
+        <div class="flex flex-wrap gap-2">
+            {% if managed.login_disabled %}
+            <form action="/admin/users/account-enable" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="address" value="{{ managed.address }}">
+                <button class="btn btn-soft" type="submit">Enable login</button>
+            </form>
+            {% else %}
+            <form action="/admin/users/account-disable" method="post" onsubmit="return confirm('Disable login for this account?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="address" value="{{ managed.address }}">
+                <button class="btn btn-soft" type="submit">Disable login</button>
+            </form>
+            {% endif %}
+            <form action="/admin/users/quota-recalc" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="address" value="{{ managed.address }}">
+                <button class="btn btn-soft" type="submit">Quota recalc</button>
+            </form>
+            <form action="/admin/users/force-resync" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="address" value="{{ managed.address }}">
+                <button class="btn btn-soft" type="submit">Force resync</button>
+            </form>
+            <form action="/admin/users/delete" method="post" onsubmit="return confirm('Clear INBOX for this user?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="address" value="{{ managed.address }}">
+                <button class="btn btn-soft" type="submit">Clear INBOX</button>
+            </form>
+            <form action="/admin/users/account-delete" method="post" onsubmit="return confirm('Delete account lifecycle directory? This is destructive.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="address" value="{{ managed.address }}">
+                <button class="btn btn-danger" type="submit">Delete user</button>
+            </form>
+        </div>
+
+        <section class="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-black/10">
+            <h4 class="px-4 pt-4 text-base font-semibold text-white">Mailboxes</h4>
+            {% if managed.mailboxes.is_empty() %}
+            <p class="px-4 pb-4 pt-2 text-sm text-slate-400">No mailbox list available.</p>
+            {% else %}
+            <div class="mt-2 overflow-x-auto">
+            <table class="data-table w-full text-sm">
+                <thead>
+                <tr class="border-b border-white/10 text-left text-xs uppercase tracking-wider text-slate-400">
+                    <th class="px-3 py-2">Name</th>
+                    <th class="px-3 py-2">Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for mailbox in managed.mailboxes %}
+                <tr class="border-b border-white/5 text-slate-200">
+                    <td class="px-3 py-2">{{ mailbox }}</td>
+                    <td class="px-3 py-2">
+                        <form action="/admin/users/mailbox-expunge" method="post" onsubmit="return confirm('Expunge all messages from this mailbox?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <input type="hidden" name="address" value="{{ managed.address }}">
+                            <input type="hidden" name="mailbox" value="{{ mailbox }}">
+                            <button class="btn btn-danger" type="submit">Expunge</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% endif %}
+        </section>
         {% endif %}
-        <form action="/admin/users/quota-recalc" method="post">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="address" value="{{ managed.address }}">
-            <button class="btn btn-soft" type="submit">Quota recalc</button>
-        </form>
-        <form action="/admin/users/force-resync" method="post">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="address" value="{{ managed.address }}">
-            <button class="btn btn-soft" type="submit">Force resync</button>
-        </form>
-        <form action="/admin/users/delete" method="post" onsubmit="return confirm('Clear INBOX for this user?');">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="address" value="{{ managed.address }}">
-            <button class="btn btn-soft" type="submit">Clear INBOX</button>
-        </form>
-        <form action="/admin/users/account-delete" method="post" onsubmit="return confirm('Delete account lifecycle directory? This is destructive.');">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="address" value="{{ managed.address }}">
-            <button class="btn btn-danger" type="submit">Delete account lifecycle</button>
-        </form>
-    </div>
-</section>
 
-<section class="glass-card mt-4 overflow-hidden">
-    <h3 class="text-lg font-semibold text-white">Mailboxes</h3>
-    {% if managed.mailboxes.is_empty() %}
-    <p class="mt-2 text-sm text-slate-400">No mailbox list available.</p>
-    {% else %}
-    <div class="mt-3 overflow-x-auto">
-    <table class="data-table w-full text-sm">
-        <thead>
-        <tr class="border-b border-white/10 text-left text-xs uppercase tracking-wider text-slate-400">
-            <th class="px-3 py-2">Name</th>
-            <th class="px-3 py-2">Action</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for mailbox in managed.mailboxes %}
-        <tr class="border-b border-white/5 text-slate-200">
-            <td class="px-3 py-2">{{ mailbox }}</td>
-            <td class="px-3 py-2">
-                <form action="/admin/users/mailbox-expunge" method="post" onsubmit="return confirm('Expunge all messages from this mailbox?');">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <input type="hidden" name="address" value="{{ managed.address }}">
-                    <input type="hidden" name="mailbox" value="{{ mailbox }}">
-                    <button class="btn btn-danger" type="submit">Expunge</button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+        {% if let Some(metadata) = selected_metadata.as_deref() %}
+        <pre class="max-h-[70vh] overflow-auto whitespace-pre-wrap rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-slate-300">{{ metadata }}</pre>
+        {% endif %}
     </div>
-    {% endif %}
 </section>
+<script>
+(() => {
+  const backdrop = document.getElementById("users-modal-backdrop");
+  const modal = document.getElementById("users-modal");
+  if (!backdrop || !modal) return;
+  const closeModal = () => window.location.assign("/admin/users");
+
+  backdrop.addEventListener("click", (event) => {
+    if (event.target === backdrop) closeModal();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeModal();
+  });
+})();
+</script>
 {% endif %}
 {% endblock %}
