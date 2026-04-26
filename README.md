@@ -130,6 +130,44 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now chatmail-control
 ```
 
+### Installer Script
+
+For a rustup-style one-liner install flow, use the bundled installer script from the repository:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/localzet/chatmail-control/main/scripts/install.sh | sudo bash
+```
+
+Install a specific version:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/localzet/chatmail-control/main/scripts/install.sh | \
+  sudo bash -s -- --version v0.1.0
+```
+
+What the installer does:
+
+- resolves the requested GitHub release;
+- downloads the release tarball and `.sha256`;
+- verifies the checksum;
+- installs the binary to `/usr/local/bin/chatmail-control`;
+- installs static, templates, and migrations under `/opt/chatmail-control`;
+- installs `config.example.toml` and creates `config.toml` if missing;
+- installs and reloads the systemd unit;
+- enables and starts the service by default.
+
+Supported flags:
+
+- `--version vX.Y.Z` or `latest`
+- `--install-root /opt/chatmail-control`
+- `--binary-path /usr/local/bin/chatmail-control`
+- `--config-dir /etc/chatmail-control`
+- `--state-dir /var/lib/chatmail-control`
+- `--service-user chatmail-control`
+- `--service-group chatmail-control`
+- `--no-enable`
+- `--no-start`
+
 ## systemd
 
 Binary path in the provided unit:
@@ -292,6 +330,8 @@ The repository includes:
 
 - verifies formatting, clippy, and tests;
 - builds a Linux AMD64 release bundle;
+- publishes a standalone Linux AMD64 binary;
+- publishes the installer script;
 - uploads `.tar.gz` and `.sha256` files to GitHub Release assets;
 - uploads the same bundle as a workflow artifact.
 

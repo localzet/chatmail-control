@@ -63,7 +63,11 @@ jobs:
           cp target/release/chatmail-control "$ARTIFACT_DIR/"
           cp README.md config.example.toml .env.example "$ARTIFACT_DIR/"
           cp -r migrations templates static systemd "$ARTIFACT_DIR/"
+          cp scripts/install.sh "dist/install.sh"
+          chmod +x "dist/install.sh"
+          cp target/release/chatmail-control "dist/chatmail-control-${VERSION}-linux-amd64"
           tar -C dist -czf "dist/chatmail-control-${VERSION}-linux-amd64.tar.gz" "chatmail-control-${VERSION}-linux-amd64"
+          sha256sum "dist/chatmail-control-${VERSION}-linux-amd64" > "dist/chatmail-control-${VERSION}-linux-amd64.sha256"
           sha256sum "dist/chatmail-control-${VERSION}-linux-amd64.tar.gz" > "dist/chatmail-control-${VERSION}-linux-amd64.tar.gz.sha256"
 
       - name: Upload workflow artifact
@@ -77,5 +81,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
+            dist/install.sh
+            dist/chatmail-control-*
             dist/*.tar.gz
             dist/*.sha256
