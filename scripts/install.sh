@@ -145,7 +145,7 @@ ensure_service_account() {
 }
 
 install_release() {
-  local tmp_dir asset_base archive_name checksum_name bundle_dir
+  local tmp_dir asset_base archive_name checksum_name checksum_check_name bundle_dir
 
   tmp_dir="$(mktemp -d)"
   trap '[[ -n "${tmp_dir:-}" ]] && rm -rf "${tmp_dir}"' EXIT
@@ -164,10 +164,14 @@ install_release() {
     -o "${tmp_dir}/${checksum_name}" \
     "https://github.com/${REPO}/releases/download/${VERSION}/${checksum_name}"
 
+  checksum_check_name="${tmp_dir}/checksum.check"
+  awk '{print $1 "  " $NF}' "${tmp_dir}/${checksum_name}" \
+    | sed "s#  .*${archive_name}#  ${archive_name}#" > "${checksum_check_name}"
+
   log "verifying checksum"
   (
     cd "${tmp_dir}"
-    sha256sum -c "${checksum_name}"
+    sha256sum -c "$(basename "${checksum_check_name}")"
   )
 
   log "extracting release bundle"
