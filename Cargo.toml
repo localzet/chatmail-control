@@ -1,0 +1,34 @@
+[package]
+name = "chatmail-control"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0"
+argon2 = { version = "0.5", features = ["std"] }
+askama = "0.12"
+askama_axum = "0.4"
+axum = { version = "0.7", features = ["form", "http1", "json", "macros", "tokio"] }
+axum-extra = { version = "0.9", features = ["cookie", "cookie-private"] }
+base64 = "0.22"
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4.5", features = ["derive", "env"] }
+hickory-resolver = { version = "0.24", features = ["tokio-runtime"] }
+http = "1.1"
+rand = "0.8"
+regex = "1.11"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio-rustls", "chrono", "migrate"] }
+thiserror = "2.0"
+tokio = { version = "1.43", features = ["full"] }
+toml = "0.8"
+tower = "0.5"
+tower-http = { version = "0.6", features = ["fs", "trace"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+url = "2.5"
+uuid = { version = "1.11", features = ["v4", "serde"] }
+
+[dev-dependencies]
+tempfile = "3.15"

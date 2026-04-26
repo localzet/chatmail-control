@@ -1,0 +1,9 @@
+<nav class="nav">
+  <a href="/admin" class="{% if current_path == "/admin" %}active{% endif %}">Dashboard</a>
+  <a href="/admin/users" class="{% if current_path == "/admin/users" %}active{% endif %}">Users</a>
+  <a href="/admin/bans" class="{% if current_path == "/admin/bans" %}active{% endif %}">Bans</a>
+  <a href="/admin/invites" class="{% if current_path == "/admin/invites" %}active{% endif %}">Invites</a>
+  <a href="/admin/logs" class="{% if current_path == "/admin/logs" %}active{% endif %}">Logs</a>
+  <a href="/admin/health" class="{% if current_path == "/admin/health" %}active{% endif %}">Health</a>
+  <a href="/admin/settings" class="{% if current_path == "/admin/settings" %}active{% endif %}">Settings</a>
+</nav>

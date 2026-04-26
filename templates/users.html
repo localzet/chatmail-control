@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="card">
+  <h3>Mailboxes</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Address</th>
+        <th>Status</th>
+        <th>Mailbox size</th>
+        <th>Messages</th>
+        <th>Last seen</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+      <tr>
+        <td>{{ user.address }}</td>
+        <td>{% if user.blocked %}blocked{% else %}active{% endif %}</td>
+        <td>{{ user.mailbox_size.as_deref().unwrap_or("unavailable") }}</td>
+        <td>{{ user.message_count.as_deref().unwrap_or("unavailable") }}</td>
+        <td>{{ user.last_seen.as_deref().unwrap_or("unavailable") }}</td>
+        <td class="actions">
+          <a class="button secondary" href="/admin/users?metadata={{ user.address }}">View metadata</a>
+          {% if user.blocked %}
+          <form action="/admin/users/unblock" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="address" value="{{ user.address }}">
+            <button class="button secondary" type="submit">Unblock</button>
+          </form>
+          {% else %}
+          <form action="/admin/users/block" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="address" value="{{ user.address }}">
+            <button class="button secondary" type="submit">Block</button>
+          </form>
+          {% endif %}
+          <form action="/admin/users/delete" method="post" onsubmit="return confirm('Delete mailbox?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="address" value="{{ user.address }}">
+            <button class="button danger" type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% match selected_metadata %}
+{% when Some with (metadata) %}
+<section class="card">
+  <h3>Metadata</h3>
+  <pre>{{ metadata }}</pre>
+</section>
+{% when None %}
+{% endmatch %}
+{% endblock %}

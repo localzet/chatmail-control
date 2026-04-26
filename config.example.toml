@@ -1,0 +1,50 @@
+[server]
+bind = "127.0.0.1:8088"
+public_url = "https://admin.example.com"
+secure_cookies = true
+database_url = "sqlite:///var/lib/chatmail-control/chatmail-control.db"
+
+[auth]
+session_secret = "CHANGE_ME_64_RANDOM_CHARS"
+session_ttl_hours = 12
+
+[commands]
+timeout_seconds = 10
+
+[users]
+list_command = ["doveadm", "user", "*"]
+size_command = ["doveadm", "quota", "get", "-u", "{address}"]
+message_count_command = ["doveadm", "mailbox", "status", "-u", "{address}", "messages", "INBOX"]
+delete_command = ["doveadm", "mailbox", "delete", "-u", "{address}", "-s", "INBOX"]
+metadata_command = ["doveadm", "user", "-u", "{address}", "*"]
+
+[bans]
+address_file = "/etc/chatmail-control/blocked_addresses.txt"
+domain_file = "/etc/chatmail-control/blocked_domains.txt"
+ip_file = "/etc/chatmail-control/blocked_ips.txt"
+reload_commands = [
+  ["systemctl", "reload", "postfix"],
+  ["systemctl", "reload", "dovecot"]
+]
+
+[settings]
+generated_policy_file = "/etc/chatmail-control/policy.toml"
+reload_commands = [
+  ["systemctl", "reload", "doveauth"]
+]
+
+[invites]
+export_file = "/etc/chatmail-control/invites.txt"
+
+[logs]
+sources = [
+  { name = "dovecot", command = ["journalctl", "-u", "dovecot", "-n", "200", "--no-pager"] },
+  { name = "postfix", command = ["journalctl", "-u", "postfix", "-n", "200", "--no-pager"] },
+  { name = "chatmail-metadata", command = ["journalctl", "-u", "chatmail-metadata", "-n", "200", "--no-pager"] }
+]
+
+[health]
+domain = "example.com"
+dkim_selector = "mail"
+services = ["dovecot", "postfix", "doveauth", "chatmail-metadata"]
+ports = [25, 587, 993]

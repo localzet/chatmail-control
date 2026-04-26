@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login · chatmail-control</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body class="login-page">
+  <section class="login-card">
+    <h1>chatmail-control</h1>
+    <p>Admin login</p>
+    <form action="/login" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label>
+        Username
+        <input type="text" name="username" required>
+      </label>
+      <label>
+        Password
+        <input type="password" name="password" required>
+      </label>
+      <button class="button" type="submit">Login</button>
+    </form>
+  </section>
+</body>
+</html>

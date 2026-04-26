@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="card">
+  <form class="grid-form" action="/admin/logs" method="get">
+    <label>
+      Source
+      <select name="source">
+        {% for source in sources %}
+        <option value="{{ source.name }}" {% if source.selected %}selected{% endif %}>{{ source.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Search
+      <input type="text" name="q" value="{{ query }}">
+    </label>
+    <label>
+      Lines
+      <input type="number" name="limit" min="10" max="1000" value="{{ limit }}">
+    </label>
+    <button class="button" type="submit">Refresh</button>
+  </form>
+</section>
+<section class="card">
+  <pre class="log-view">{% for line in lines %}<span class="log-{{ line.level }}">{{ line.text }}</span>
+{% endfor %}</pre>
+</section>
+{% endblock %}
