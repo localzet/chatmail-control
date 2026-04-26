@@ -7,12 +7,9 @@ use crate::error::{AppError, AppResult};
 pub struct Config {
     pub server: ServerConfig,
     pub auth: AuthConfig,
-    pub commands: CommandsConfig,
-    pub users: UsersConfig,
     pub bans: BansConfig,
     pub settings: SettingsConfig,
     pub invites: InvitesConfig,
-    pub logs: LogsConfig,
     pub health: HealthConfig,
 }
 
@@ -42,54 +39,20 @@ pub struct AuthConfig {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct CommandsConfig {
-    pub timeout_seconds: u64,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct UsersConfig {
-    pub list_command: Vec<String>,
-    #[serde(default)]
-    pub size_command: Vec<String>,
-    #[serde(default)]
-    pub message_count_command: Vec<String>,
-    #[serde(default)]
-    pub delete_command: Vec<String>,
-    #[serde(default)]
-    pub metadata_command: Vec<String>,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct BansConfig {
     pub address_file: String,
     pub domain_file: String,
     pub ip_file: String,
-    #[serde(default)]
-    pub reload_commands: Vec<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SettingsConfig {
     pub generated_policy_file: String,
-    #[serde(default)]
-    pub reload_commands: Vec<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct InvitesConfig {
     pub export_file: String,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct LogsConfig {
-    #[serde(default)]
-    pub sources: Vec<LogSourceConfig>,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct LogSourceConfig {
-    pub name: String,
-    pub command: Vec<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -116,6 +79,6 @@ mod tests {
         let cfg: Config = toml::from_str(raw).expect("config should parse");
         assert_eq!(cfg.server.bind, "127.0.0.1:8088");
         assert_eq!(cfg.health.domain, "example.com");
-        assert_eq!(cfg.logs.sources.len(), 3);
+        assert_eq!(cfg.health.ports, vec![25, 587, 993]);
     }
 }

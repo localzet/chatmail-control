@@ -1,6 +1,7 @@
 mod audit;
 mod auth;
 mod bans;
+mod chatmail;
 mod config;
 mod db;
 mod error;
@@ -59,7 +60,11 @@ enum Commands {
 
 #[derive(Args)]
 struct ServeArgs {
-    #[arg(long, env = "CHATMAIL_CONTROL_CONFIG", default_value = "config.toml")]
+    #[arg(
+        long,
+        env = "CHATMAIL_CONTROL_CONFIG",
+        default_value = "/etc/chatmail-control/config.toml"
+    )]
     config: PathBuf,
 }
 
@@ -115,7 +120,7 @@ async fn run_admin_command(command: AdminCommand) -> anyhow::Result<()> {
 async fn serve(args: ServeArgs) -> anyhow::Result<()> {
     let config = Arc::new(Config::load(args.config)?);
     let pool = db::connect(&config.server.database_url).await?;
-    let shell = Shell::new(config.commands.timeout_seconds);
+    let shell = Shell::new(chatmail::COMMAND_TIMEOUT_SECONDS);
     let cookie_key = derive_cookie_key(&config.auth.session_secret);
 
     let state = AppState {

@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="localzet/chatmail-control"
 VERSION="${CHATMAIL_CONTROL_VERSION:-latest}"
 INSTALL_ROOT="${CHATMAIL_CONTROL_INSTALL_ROOT:-/opt/chatmail-control}"
 BINARY_PATH="${CHATMAIL_CONTROL_BINARY_PATH:-/usr/local/bin/chatmail-control}"
@@ -12,7 +11,7 @@ START_SERVICE="${CHATMAIL_CONTROL_START_SERVICE:-0}"
 
 usage() {
   cat <<'EOF'
-chatmail-control installer
+Chatmail Control installer
 
 Usage:
   install.sh [--version v0.1.0]
@@ -39,11 +38,11 @@ EOF
 }
 
 log() {
-  printf '[chatmail-control] %s\n' "$*"
+  printf '[cm-control] %s\n' "$*"
 }
 
 fail() {
-  printf '[chatmail-control] error: %s\n' "$*" >&2
+  printf '[cm-control] error: %s\n' "$*" >&2
   exit 1
 }
 
@@ -104,9 +103,9 @@ resolve_version() {
     return
   fi
 
-  log "resolving latest release for ${REPO}"
+  log "resolving latest release"
   VERSION="$(
-    curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
+    curl -fsSL "https://api.github.com/repos/localzet/chatmail-control/releases/latest" \
       | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' \
       | head -n1
   )"
@@ -126,12 +125,12 @@ install_release() {
   log "downloading ${archive_name}"
   curl -fsSL \
     -o "${tmp_dir}/${archive_name}" \
-    "https://github.com/${REPO}/releases/download/${VERSION}/${archive_name}"
+    "https://github.com/localzet/chatmail-control/releases/download/${VERSION}/${archive_name}"
 
   log "downloading checksum"
   curl -fsSL \
     -o "${tmp_dir}/${checksum_name}" \
-    "https://github.com/${REPO}/releases/download/${VERSION}/${checksum_name}"
+    "https://github.com/localzet/chatmail-control/releases/download/${VERSION}/${checksum_name}"
 
   checksum_check_name="${tmp_dir}/checksum.check"
   awk '{print $1 "  " $NF}' "${tmp_dir}/${checksum_name}" \
@@ -184,7 +183,7 @@ install_release() {
 
   cat <<EOF
 
-chatmail-control ${VERSION} installed successfully.
+Chatmail Control ${VERSION} installed successfully.
 
 Next steps:
   1. Edit ${CONFIG_DIR}/config.toml

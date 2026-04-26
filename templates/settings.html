@@ -2,33 +2,37 @@
 
 {% block content %}
 <section class="card">
-  <form class="grid-form" action="/admin/settings" method="post">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <label>
-      Registration mode
-      <select name="registration_mode">
-        <option value="public" {% if settings.registration_mode == "public" %}selected{% endif %}>public</option>
-        <option value="invite_only" {% if settings.registration_mode == "invite_only" %}selected{% endif %}>invite_only</option>
-        <option value="closed" {% if settings.registration_mode == "closed" %}selected{% endif %}>closed</option>
-      </select>
-    </label>
-    <label>
-      Max accounts per IP per day
-      <input type="number" name="max_accounts_per_ip_per_day" value="{{ settings.max_accounts_per_ip_per_day }}">
-    </label>
-    <label>
-      Max accounts per day
-      <input type="number" name="max_accounts_per_day" value="{{ settings.max_accounts_per_day }}">
-    </label>
-    <label>
-      Cleanup empty mailboxes after days
-      <input type="number" name="cleanup_empty_mailboxes_after_days" value="{{ settings.cleanup_empty_mailboxes_after_days }}">
-    </label>
-    <label class="full-width">
-      Notes
-      <textarea name="notes" rows="5">{{ settings.notes }}</textarea>
-    </label>
-    <button class="button" type="submit">Save settings</button>
-  </form>
+    <form class="grid-form" action="/admin/settings" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label>
+            Registration mode
+            <select name="registration_mode">
+                <option value="public" {% if settings.registration_mode==
+                "public" %}selected{% endif %}>public</option>
+                <option value="invite_only" {% if settings.registration_mode==
+                "invite_only" %}selected{% endif %}>invite_only</option>
+                <option value="closed" {% if settings.registration_mode==
+                "closed" %}selected{% endif %}>closed</option>
+            </select>
+        </label>
+        <label>
+            Max accounts per IP per day
+            <input type="number" name="max_accounts_per_ip_per_day" value="{{ settings.max_accounts_per_ip_per_day }}">
+        </label>
+        <label>
+            Max accounts per day
+            <input type="number" name="max_accounts_per_day" value="{{ settings.max_accounts_per_day }}">
+        </label>
+        <label>
+            Cleanup empty mailboxes after days
+            <input type="number" name="cleanup_empty_mailboxes_after_days"
+                   value="{{ settings.cleanup_empty_mailboxes_after_days }}">
+        </label>
+        <label class="full-width">
+            Notes
+            <textarea name="notes" rows="5">{{ settings.notes }}</textarea>
+        </label>
+        <button class="button" type="submit">Save settings</button>
+    </form>
 </section>
 {% endblock %}

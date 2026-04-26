@@ -1,11 +1,11 @@
 [Unit]
-Description=chatmail-control admin panel
+Description=Chatmail Control panel
 After=network.target
 
 [Service]
 Type=simple
 WorkingDirectory=/opt/chatmail-control
-ExecStart=/usr/local/bin/chatmail-control serve --config /etc/chatmail-control/config.toml
+ExecStart=/usr/local/bin/chatmail-control serve
 Restart=always
 RestartSec=5
 NoNewPrivileges=false

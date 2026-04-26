@@ -1,6 +1,7 @@
-# chatmail-control
+# Chatmail Control
 
-`chatmail-control` is a lightweight self-hosted admin/control-plane panel for a chatmail server stack. It is a thin admin UI around existing chatmail/cmdeploy components such as Dovecot, Postfix, doveauth, and chatmail-metadata.
+Chatmail Control is a lightweight self-hosted admin/control-plane panel for a chatmail server stack. It is a thin admin
+UI around existing chatmail/cmdeploy components such as Dovecot, Postfix, doveauth, and chatmail-metadata.
 
 This is not webmail, not a mailbox client, and not a Mailcow/PostfixAdmin replacement.
 
@@ -8,11 +9,11 @@ This is not webmail, not a mailbox client, and not a Mailcow/PostfixAdmin replac
 
 - admin login/logout with cookie sessions and Argon2 password hashes;
 - dashboard with service state, queue size, user count, active bans, and recent audit events;
-- user/mailbox listing through external commands defined in config;
-- block/unblock address, domain, IP, and subnet bans with file export and reload commands;
+- user/mailbox listing through built-in `doveadm` commands;
+- block/unblock address, domain, IP, and subnet bans with file export and built-in reload behavior;
 - registration settings stored in SQLite and exported into a generated policy file;
 - invite management with token export;
-- logs viewer backed by configured host commands;
+- logs viewer backed by built-in `journalctl` sources for chatmail services;
 - health page with service, port, DNS, TLS, queue, and disk checks;
 - audit log for admin actions;
 - CLI bootstrap for the initial admin user.
@@ -32,9 +33,14 @@ This is not webmail, not a mailbox client, and not a Mailcow/PostfixAdmin replac
 - Session storage is persisted in SQLite via the `sessions` table.
 - Shell integration is always argv-based. Commands are never executed through a shell.
 - The UI degrades to `unavailable` when an external command is missing or fails.
-- Health checks tolerate missing local tools such as `systemctl`, `postqueue`, or `openssl` and render warnings instead of crashing.
-- Invite handling is storage/export only. Real auth-side invite enforcement is left as an integration hook and documented below.
-- The supported deployment model is a native host install on the mail server, managed by systemd and running with host-level privileges.
+- Command catalog is built into the application for chatmail host deployments and is not configurable from TOML.
+- Shell command timeout is fixed to 10 seconds in MVP.
+- Health checks tolerate missing local tools such as `systemctl`, `postqueue`, or `openssl` and render warnings instead
+  of crashing.
+- Invite handling is storage/export only. Real auth-side invite enforcement is left as an integration hook and
+  documented below.
+- The supported deployment model is a native host install on the mail server, managed by systemd and running with
+  host-level privileges.
 
 ## Build From Source
 
@@ -50,7 +56,7 @@ Edit `config.toml` before first run:
 - set `server.public_url`;
 - set `auth.session_secret` to a long random secret;
 - set correct file paths for bans, settings, and invite exports;
-- adapt command arrays for your actual chatmail deployment.
+- set `health.domain` and `health.dkim_selector` for your relay.
 
 Run the server:
 
@@ -60,7 +66,8 @@ chatmail-control serve --config ./config.toml
 
 ## Deployment Model
 
-The supported deployment model is a native binary on the same host as Postfix, Dovecot, and other chatmail services, managed by systemd.
+The supported deployment model is a native binary on the same host as Postfix, Dovecot, and other chatmail services,
+managed by systemd.
 
 The service is intended to run with host-level privileges because it needs access to:
 
@@ -165,7 +172,6 @@ Create the first admin after config is in place:
 
 ```bash
 sudo /usr/local/bin/chatmail-control admin create \
-  --config /etc/chatmail-control/config.toml \
   --username admin \
   --password 'CHANGE_ME'
 ```
@@ -174,7 +180,6 @@ Reset password:
 
 ```bash
 sudo /usr/local/bin/chatmail-control admin reset-password \
-  --config /etc/chatmail-control/config.toml \
   --username admin \
   --password 'NEW_SECRET'
 ```
@@ -188,39 +193,56 @@ sudo systemctl status chatmail-control --no-pager
 
 ## systemd
 
-The provided unit intentionally runs as root. That is required for practical access to Dovecot, Postfix, queue inspection, log access, and reload commands.
+The provided unit intentionally runs as root. That is required for practical access to Dovecot, Postfix, queue
+inspection, log access, and reload commands.
 
 Binary path in the provided unit:
 
 - `/usr/local/bin/chatmail-control`
-- config: `/etc/chatmail-control/config.toml`
+- `/etc/chatmail-control/config.toml` (config)
 
 Start command:
 
 ```bash
-/usr/local/bin/chatmail-control serve --config /etc/chatmail-control/config.toml
+/usr/local/bin/chatmail-control serve
 ```
 
 ## Example Config
 
-Use [config.example.toml](./config.example.toml) as the baseline. The application expects command arrays, not command strings.
+Use [config.example.toml](./config.example.toml) as the baseline.
 
-Example:
+Built-in command catalog used by the app:
 
-```toml
-[users]
-list_command = ["doveadm", "user", "*"]
-size_command = ["doveadm", "quota", "get", "-u", "{address}"]
-message_count_command = ["doveadm", "mailbox", "status", "-u", "{address}", "messages", "INBOX"]
-delete_command = ["doveadm", "mailbox", "delete", "-u", "{address}", "-s", "INBOX"]
-metadata_command = ["doveadm", "user", "-u", "{address}", "*"]
+```text
+Users:
+- doveadm user '*'
+- doveadm quota get -u <address>
+- doveadm mailbox status -u <address> messages INBOX
+- doveadm user -u <address> *
+- doveadm mailbox delete -u <address> -s INBOX
+
+Bans reload:
+- systemctl reload postfix
+- systemctl reload dovecot
+
+Settings reload:
+- systemctl reload doveauth
+
+Logs:
+- journalctl -u dovecot -n <N> --no-pager
+- journalctl -u postfix -n <N> --no-pager
+- journalctl -u doveauth -n <N> --no-pager
+- journalctl -u chatmail-metadata -n <N> --no-pager
+- journalctl -u chatmail-expire -n <N> --no-pager
+- journalctl -u lastlogin -n <N> --no-pager
 ```
 
 Important:
 
-- the default `delete_command` above deletes the `INBOX` mailbox through Dovecot, not the entire account from your chatmail stack;
+- the built-in mailbox delete action deletes the `INBOX` mailbox through Dovecot, not the entire account from your
+  chatmail stack;
 - many deployments will recreate or continue listing the user after that command;
-- if you want real account removal, replace `delete_command` with the host-specific command that removes the mailbox/account in your actual provisioning stack.
+- account lifecycle operations in `chatmaild/cmdeploy` are intentionally not auto-managed by MVP.
 
 ## Reverse Proxy Example
 
@@ -268,7 +290,7 @@ example.org REJECT domain blocked by admin
 Typical integration path:
 
 1. Point your Postfix restriction maps or policy loader to these generated files.
-2. Keep `reload_commands` configured so Postfix/Dovecot reload after admin changes.
+2. The app runs built-in `systemctl reload postfix` and `systemctl reload dovecot` after ban changes.
 3. Validate file ownership and permissions so the service user can update files safely.
 
 Recommended Postfix wiring for this project:
@@ -282,13 +304,17 @@ sudo systemctl reload postfix
 
 Notes:
 
-- `texthash:` is intentional here so Postfix can read the generated text files directly without a separate `postmap` step.
-- address bans must be enforced through both `check_recipient_access` and `check_sender_access`, otherwise a blocked mailbox can still send mail;
+- `texthash:` is intentional here so Postfix can read the generated text files directly without a separate `postmap`
+  step.
+- address bans must be enforced through both `check_recipient_access` and `check_sender_access`, otherwise a blocked
+  mailbox can still send mail;
 - domain bans are enforced through `check_sender_access`;
 - IP and subnet bans are enforced through `check_client_access`.
-- If you already have custom Postfix restrictions, merge these access checks into your existing chains instead of replacing them blindly with `postconf -e`.
+- If you already have custom Postfix restrictions, merge these access checks into your existing chains instead of
+  replacing them blindly with `postconf -e`.
 
-The Health page verifies these `postconf` integrations automatically and reports a warning when ban files are generated but not wired into Postfix on both directions.
+The Health page verifies these `postconf` integrations automatically and reports a warning when ban files are generated
+but not wired into Postfix on both directions.
 
 ## Settings Integration
 
@@ -302,7 +328,8 @@ The generated file is a TOML snapshot of:
 - `cleanup_empty_mailboxes_after_days`
 - `notes`
 
-The configured reload commands are executed after every save. If reload fails, settings still persist, a warning is logged, and an audit event is written.
+The built-in `systemctl reload doveauth` command is executed after every save. If reload fails, settings still persist,
+a warning is logged, and an audit event is written.
 
 ## Invites Integration Hook
 
@@ -348,12 +375,15 @@ If one of these tools is unavailable, the page still opens and shows a warning o
 
 - Login returns `401`: verify that the admin exists and the password was set with the CLI.
 - `/admin` returns `401`: expected without a valid login session, use `/login`.
-- Users page is empty: check `users.list_command` output manually on the host.
-- Delete returns to the Users page but nothing was removed: the app only runs `[users].delete_command`; the default example deletes `INBOX`, not the whole account.
-- `doveadm user '*'` works as `root` but not as an unprivileged user: expected on many real systems; the provided deployment model runs the service with host-level privileges.
+- Users page is empty: run `doveadm user '*'` manually on the host to verify permissions/output.
+- Delete returns to the Users page but nothing was removed: the app runs built-in
+  `doveadm mailbox delete -u <address> -s INBOX`, which does not remove the full account lifecycle.
+- `doveadm user '*'` works as `root` but not as an unprivileged user: expected on many real systems; the provided
+  deployment model runs the service with host-level privileges.
 - Mailbox metrics show `unavailable`: the optional command failed or returned unsupported output.
 - Health page shows warnings: verify that required host tools and services are available on the mail server.
-- Bans were saved but Postfix/Dovecot did not reload: inspect `audit_log` and configured `reload_commands`.
+- Bans were saved but Postfix/Dovecot did not reload: inspect `audit_log` and system journal for built-in reload command
+  failures.
 
 ## GitHub Actions / CI-CD
 

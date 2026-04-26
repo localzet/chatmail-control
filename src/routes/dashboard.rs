@@ -35,7 +35,7 @@ async fn index(
 ) -> crate::error::AppResult<impl IntoResponse> {
     let current = auth::require_admin(&state, &jar).await?;
     let blocked = crate::bans::active_values(&state.pool).await?;
-    let users = users::list_users(&state.shell, &state.config, &blocked).await;
+    let users = users::list_users(&state.shell, &blocked).await;
     let stats =
         services::collect_dashboard_stats(&state.pool, &state.shell, &state.config, users.len())
             .await?;

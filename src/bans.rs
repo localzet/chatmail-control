@@ -3,7 +3,7 @@ use serde_json::json;
 use sqlx::{FromRow, SqlitePool};
 
 use crate::{
-    audit,
+    audit, chatmail,
     config::Config,
     error::AppResult,
     shell::{command_result_details, run_reload_commands, write_text_file, Shell},
@@ -101,14 +101,7 @@ pub async fn add(
     .await?;
 
     sync_policy_files(pool, config).await?;
-    execute_reload_commands(
-        pool,
-        shell,
-        config,
-        Some(create.admin_id),
-        create.ip_address,
-    )
-    .await
+    execute_reload_commands(pool, shell, Some(create.admin_id), create.ip_address).await
 }
 
 pub async fn set_active(
@@ -149,7 +142,7 @@ pub async fn set_active(
     .await?;
 
     sync_policy_files(pool, config).await?;
-    execute_reload_commands(pool, shell, config, Some(admin_id), ip_address).await
+    execute_reload_commands(pool, shell, Some(admin_id), ip_address).await
 }
 
 pub async fn delete(
@@ -184,7 +177,7 @@ pub async fn delete(
     .await?;
 
     sync_policy_files(pool, config).await?;
-    execute_reload_commands(pool, shell, config, Some(admin_id), ip_address).await
+    execute_reload_commands(pool, shell, Some(admin_id), ip_address).await
 }
 
 pub async fn set_active_for_value(
@@ -214,14 +207,7 @@ pub async fn set_active_for_value(
     )
     .await?;
     sync_policy_files(pool, config).await?;
-    execute_reload_commands(
-        pool,
-        shell,
-        config,
-        Some(update.admin_id),
-        update.ip_address,
-    )
-    .await
+    execute_reload_commands(pool, shell, Some(update.admin_id), update.ip_address).await
 }
 
 pub async fn sync_policy_files(pool: &SqlitePool, config: &Config) -> AppResult<()> {
@@ -255,11 +241,10 @@ pub async fn sync_policy_files(pool: &SqlitePool, config: &Config) -> AppResult<
 async fn execute_reload_commands(
     pool: &SqlitePool,
     shell: &Shell,
-    config: &Config,
     admin_id: Option<i64>,
     ip_address: Option<&str>,
 ) -> AppResult<Vec<String>> {
-    let results = run_reload_commands(shell, &config.bans.reload_commands).await;
+    let results = run_reload_commands(shell, &chatmail::bans_reload_commands()).await;
     let mut warnings = Vec::new();
     for (idx, result) in results.into_iter().enumerate() {
         match result {

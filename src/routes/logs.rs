@@ -8,7 +8,7 @@ use axum::{
 use axum_extra::extract::{cookie::Key, PrivateCookieJar};
 use serde::Deserialize;
 
-use crate::{auth, logs, AppState};
+use crate::{auth, chatmail, logs, AppState};
 
 #[derive(Debug, Clone)]
 struct LogSourceView {
@@ -46,23 +46,7 @@ async fn index(
     Query(query): Query<LogsQuery>,
 ) -> crate::error::AppResult<impl IntoResponse> {
     let current = auth::require_admin(&state, &jar).await?;
-    let source = query.source.unwrap_or_else(|| {
-        state
-            .config
-            .logs
-            .sources
-            .first()
-            .map(|src| src.name.clone())
-            .unwrap_or_else(|| "dovecot".into())
-    });
-    let source_cfg = state
-        .config
-        .logs
-        .sources
-        .iter()
-        .find(|src| src.name == source)
-        .or_else(|| state.config.logs.sources.first())
-        .ok_or_else(|| crate::error::AppError::Config("no log sources configured".into()))?;
+    let source_cfg = chatmail::log_source_by_name(query.source.as_deref());
     let limit = query.limit.unwrap_or(200);
     let lines = logs::read_logs(&state.shell, source_cfg, query.q.as_deref(), limit).await;
     Ok(LogsTemplate {
@@ -72,14 +56,11 @@ async fn index(
         csrf_token: current.session.csrf_token,
         query: query.q.unwrap_or_default(),
         limit,
-        sources: state
-            .config
-            .logs
-            .sources
+        sources: chatmail::LOG_SOURCES
             .iter()
             .map(|src| LogSourceView {
                 selected: src.name == source_cfg.name,
-                name: src.name.clone(),
+                name: src.name.to_string(),
             })
             .collect(),
         lines,

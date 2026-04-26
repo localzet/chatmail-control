@@ -5,7 +5,7 @@ use serde_json::json;
 use sqlx::{FromRow, SqlitePool};
 
 use crate::{
-    audit,
+    audit, chatmail,
     config::Config,
     error::AppResult,
     shell::{command_result_details, run_reload_commands, write_text_file, Shell},
@@ -112,7 +112,7 @@ pub async fn save(
     )
     .await?;
 
-    let results = run_reload_commands(shell, &config.settings.reload_commands).await;
+    let results = run_reload_commands(shell, &chatmail::settings_reload_commands()).await;
     let mut warnings = Vec::new();
     for (idx, result) in results.into_iter().enumerate() {
         match result {

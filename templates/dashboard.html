@@ -2,65 +2,65 @@
 
 {% block content %}
 <section class="stats-grid">
-  <article class="card stat-card">
-    <h3>Mailboxes</h3>
-    <strong>{{ users_count }}</strong>
-  </article>
-  <article class="card stat-card">
-    <h3>Active bans</h3>
-    <strong>{{ active_bans_count }}</strong>
-  </article>
-  <article class="card stat-card">
-    <h3>Mail queue</h3>
-    <strong>{{ mail_queue_size }}</strong>
-  </article>
+    <article class="card stat-card">
+        <h3>Mailboxes</h3>
+        <strong>{{ users_count }}</strong>
+    </article>
+    <article class="card stat-card">
+        <h3>Active bans</h3>
+        <strong>{{ active_bans_count }}</strong>
+    </article>
+    <article class="card stat-card">
+        <h3>Mail queue</h3>
+        <strong>{{ mail_queue_size }}</strong>
+    </article>
 </section>
 
 <section class="card">
-  <h3>Services</h3>
-  <div class="service-grid">
-    {% for item in service_statuses %}
-    <div class="service-pill {% if item.active %}ok{% else %}error{% endif %}">
-      <span>{{ item.name }}</span>
-      <small>{{ item.details }}</small>
+    <h3>Services</h3>
+    <div class="service-grid">
+        {% for item in service_statuses %}
+        <div class="service-pill {% if item.active %}ok{% else %}error{% endif %}">
+            <span>{{ item.name }}</span>
+            <small>{{ item.details }}</small>
+        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
-  </div>
 </section>
 
 <section class="card">
-  <h3>Warnings</h3>
-  <ul class="simple-list">
-    {% for item in warnings %}
-    <li><strong>{{ item.name }}</strong>: {{ item.details }}</li>
-    {% endfor %}
-    {% if warnings.len() == 0 %}
-    <li>No warnings</li>
-    {% endif %}
-  </ul>
+    <h3>Warnings</h3>
+    <ul class="simple-list">
+        {% for item in warnings %}
+        <li><strong>{{ item.name }}</strong>: {{ item.details }}</li>
+        {% endfor %}
+        {% if warnings.len() == 0 %}
+        <li>No warnings</li>
+        {% endif %}
+    </ul>
 </section>
 
 <section class="card">
-  <h3>Recent audit events</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>Time</th>
-        <th>Action</th>
-        <th>Target</th>
-        <th>IP</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for event in audit_events %}
-      <tr>
-        <td>{{ event.created_at }}</td>
-        <td>{{ event.action }}</td>
-        <td>{{ event.target_type }} / {{ event.target_value }}</td>
-        <td>{{ event.ip_address.as_deref().unwrap_or("-") }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+    <h3>Recent audit events</h3>
+    <table>
+        <thead>
+        <tr>
+            <th>Time</th>
+            <th>Action</th>
+            <th>Target</th>
+            <th>IP</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for event in audit_events %}
+        <tr>
+            <td>{{ event.created_at }}</td>
+            <td>{{ event.action }}</td>
+            <td>{{ event.target_type }} / {{ event.target_value }}</td>
+            <td>{{ event.ip_address.as_deref().unwrap_or("-") }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 </section>
 {% endblock %}

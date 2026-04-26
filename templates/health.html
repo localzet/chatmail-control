@@ -2,23 +2,25 @@
 
 {% block content %}
 <section class="card">
-  <table>
-    <thead>
-      <tr>
-        <th>Check</th>
-        <th>Status</th>
-        <th>Details</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for check in checks %}
-      <tr>
-        <td>{{ check.name }}</td>
-        <td>{{ check.status }}</td>
-        <td><pre>{{ check.details }}</pre></td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+    <table>
+        <thead>
+        <tr>
+            <th>Check</th>
+            <th>Status</th>
+            <th>Details</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for check in checks %}
+        <tr>
+            <td>{{ check.name }}</td>
+            <td>{{ check.status }}</td>
+            <td>
+                <pre>{{ check.details }}</pre>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 </section>
 {% endblock %}

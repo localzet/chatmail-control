@@ -52,7 +52,7 @@ async fn index(
 ) -> crate::error::AppResult<impl IntoResponse> {
     let current = auth::require_admin(&state, &jar).await?;
     let blocked = crate::bans::active_values(&state.pool).await?;
-    let users = users::list_users(&state.shell, &state.config, &blocked).await;
+    let users = users::list_users(&state.shell, &blocked).await;
     let selected_metadata = query.metadata.and_then(|address| {
         users
             .iter()
@@ -81,27 +81,7 @@ async fn delete_mailbox(
     let current = auth::require_admin(&state, &jar).await?;
     auth::validate_csrf(&current, &form.csrf_token)?;
 
-    if state.config.users.delete_command.is_empty() {
-        audit::log_event(
-            &state.pool,
-            Some(current.admin.id),
-            "mailbox_delete_failed",
-            "user",
-            &form.address,
-            json!({ "error": "delete_command is empty" }),
-            None,
-        )
-        .await?;
-        return Ok(Redirect::to("/admin/users?status=delete-command-missing"));
-    }
-
-    let output = state
-        .shell
-        .run_with_replacements(
-            &state.config.users.delete_command,
-            &[("{address}", &form.address)],
-        )
-        .await?;
+    let output = users::delete_mailbox(&state.shell, &form.address).await?;
     let action = if output.status == 0 {
         "mailbox_deleted"
     } else {
@@ -130,20 +110,15 @@ fn status_banner(status: Option<&str>) -> (Option<String>, Option<String>, Optio
         Some("delete-ok") => (
             Some("success".into()),
             Some("Delete command completed.".into()),
-            Some("The configured mailbox delete command returned exit code 0.".into()),
+            Some("The built-in mailbox delete command returned exit code 0.".into()),
         ),
         Some("delete-failed") => (
             Some("error".into()),
             Some("Delete command failed.".into()),
             Some(
-                "The configured mailbox delete command returned a non-zero exit code. Check the audit log or service journal for stderr/stdout."
+                "The built-in mailbox delete command returned a non-zero exit code. Check the audit log or service journal for stderr/stdout."
                     .into(),
             ),
-        ),
-        Some("delete-command-missing") => (
-            Some("error".into()),
-            Some("Delete command failed.".into()),
-            Some("Set [users].delete_command in the config before using mailbox deletion.".into()),
         ),
         _ => (None, None, None),
     }

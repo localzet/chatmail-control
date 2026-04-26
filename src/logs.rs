@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::{config::LogSourceConfig, shell::Shell};
+use crate::{chatmail, shell::Shell};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct LogLine {
@@ -10,16 +10,11 @@ pub struct LogLine {
 
 pub async fn read_logs(
     shell: &Shell,
-    source: &LogSourceConfig,
+    source: chatmail::LogSource,
     query: Option<&str>,
     limit: usize,
 ) -> Vec<LogLine> {
-    let mut command = source.command.clone();
-    if let Some(index) = command.iter().position(|part| part == "-n") {
-        if let Some(next) = command.get_mut(index + 1) {
-            *next = limit.to_string();
-        }
-    }
+    let command = chatmail::log_source_command(source, limit);
     let output = shell.run(&command).await;
     let mut lines = match output {
         Ok(output) => output

@@ -1,7 +1,7 @@
 use regex::Regex;
 use serde::Serialize;
 
-use crate::{config::Config, shell::Shell};
+use crate::{chatmail, error::AppResult, shell::Shell};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct UserMailbox {
@@ -13,12 +13,8 @@ pub struct UserMailbox {
     pub metadata: Option<String>,
 }
 
-pub async fn list_users(
-    shell: &Shell,
-    config: &Config,
-    blocked_values: &[String],
-) -> Vec<UserMailbox> {
-    let output = shell.run(&config.users.list_command).await;
+pub async fn list_users(shell: &Shell, blocked_values: &[String]) -> Vec<UserMailbox> {
+    let output = shell.run(&chatmail::users_list_command()).await;
     let addresses = match output {
         Ok(output) if output.status == 0 => parse_addresses(&output.stdout),
         _ => Vec::new(),
@@ -26,10 +22,10 @@ pub async fn list_users(
 
     let mut users = Vec::new();
     for address in addresses {
-        let mailbox_size = run_optional(shell, &config.users.size_command, &address).await;
+        let mailbox_size = run_optional(shell, &chatmail::user_size_command(&address)).await;
         let message_count =
-            run_optional(shell, &config.users.message_count_command, &address).await;
-        let metadata = run_optional(shell, &config.users.metadata_command, &address).await;
+            run_optional(shell, &chatmail::user_message_count_command(&address)).await;
+        let metadata = run_optional(shell, &chatmail::user_metadata_command(&address)).await;
         let last_seen = metadata
             .as_ref()
             .and_then(|raw| find_last_seen(raw))
@@ -46,6 +42,15 @@ pub async fn list_users(
     users
 }
 
+pub async fn delete_mailbox(
+    shell: &Shell,
+    address: &str,
+) -> AppResult<crate::shell::CommandOutput> {
+    shell
+        .run(&chatmail::user_delete_mailbox_command(address))
+        .await
+}
+
 fn parse_addresses(stdout: &str) -> Vec<String> {
     let email_re = Regex::new(r"([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})").unwrap();
     let mut addresses = Vec::new();
@@ -59,14 +64,8 @@ fn parse_addresses(stdout: &str) -> Vec<String> {
     addresses
 }
 
-async fn run_optional(shell: &Shell, command: &[String], address: &str) -> Option<String> {
-    if command.is_empty() {
-        return None;
-    }
-    let output = shell
-        .run_with_replacements(command, &[("{address}", address)])
-        .await
-        .ok()?;
+async fn run_optional(shell: &Shell, command: &[String]) -> Option<String> {
+    let output = shell.run(command).await.ok()?;
     if output.status == 0 && !output.stdout.is_empty() {
         Some(output.stdout)
     } else {

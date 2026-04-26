@@ -2,69 +2,69 @@
 
 {% block content %}
 <section class="card">
-  <h3>Registration mode</h3>
-  <p>{{ registration_mode }}</p>
-  <p>Invite export is always maintained in the configured file. Integration hook is documented in README.</p>
+    <h3>Registration mode</h3>
+    <p>{{ registration_mode }}</p>
+    <p>Invite export is always maintained in the configured file. Integration hook is documented in README.</p>
 </section>
 
 <section class="card">
-  <h3>Create invite</h3>
-  <form class="grid-form" action="/admin/invites" method="post">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <label>
-      Comment
-      <input type="text" name="comment" required>
-    </label>
-    <label>
-      Max uses
-      <input type="number" name="max_uses" min="1" value="1" required>
-    </label>
-    <label>
-      Expires at
-      <input type="datetime-local" name="expires_at">
-    </label>
-    <button class="button" type="submit">Create invite</button>
-  </form>
+    <h3>Create invite</h3>
+    <form class="grid-form" action="/admin/invites" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label>
+            Comment
+            <input type="text" name="comment" required>
+        </label>
+        <label>
+            Max uses
+            <input type="number" name="max_uses" min="1" value="1" required>
+        </label>
+        <label>
+            Expires at
+            <input type="datetime-local" name="expires_at">
+        </label>
+        <button class="button" type="submit">Create invite</button>
+    </form>
 </section>
 
 <section class="card">
-  <table>
-    <thead>
-      <tr>
-        <th>Token</th>
-        <th>Comment</th>
-        <th>Uses</th>
-        <th>Expires</th>
-        <th>Active</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for invite in invites %}
-      <tr>
-        <td><code>{{ invite.token }}</code></td>
-        <td>{{ invite.comment }}</td>
-        <td>{{ invite.used_count }} / {{ invite.max_uses }}</td>
-        <td>{{ invite.expires_at.as_deref().unwrap_or("-") }}</td>
-        <td>{% if invite.is_active == 1 %}yes{% else %}no{% endif %}</td>
-        <td class="actions">
-          {% if invite.is_active == 1 %}
-          <form action="/admin/invites/deactivate" method="post">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="id" value="{{ invite.id }}">
-            <button class="button secondary" type="submit">Deactivate</button>
-          </form>
-          {% else %}
-          <form action="/admin/invites/reactivate" method="post">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="id" value="{{ invite.id }}">
-            <button class="button secondary" type="submit">Reactivate</button>
-          </form>
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+    <table>
+        <thead>
+        <tr>
+            <th>Token</th>
+            <th>Comment</th>
+            <th>Uses</th>
+            <th>Expires</th>
+            <th>Active</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for invite in invites %}
+        <tr>
+            <td><code>{{ invite.token }}</code></td>
+            <td>{{ invite.comment }}</td>
+            <td>{{ invite.used_count }} / {{ invite.max_uses }}</td>
+            <td>{{ invite.expires_at.as_deref().unwrap_or("-") }}</td>
+            <td>{% if invite.is_active == 1 %}yes{% else %}no{% endif %}</td>
+            <td class="actions">
+                {% if invite.is_active == 1 %}
+                <form action="/admin/invites/deactivate" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="id" value="{{ invite.id }}">
+                    <button class="button secondary" type="submit">Deactivate</button>
+                </form>
+                {% else %}
+                <form action="/admin/invites/reactivate" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="id" value="{{ invite.id }}">
+                    <button class="button secondary" type="submit">Reactivate</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 </section>
 {% endblock %}

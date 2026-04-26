@@ -2,81 +2,81 @@
 
 {% block content %}
 <section class="card">
-  <h3>Add ban</h3>
-  <form class="grid-form" action="/admin/bans" method="post">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <label>
-      Kind
-      <select name="kind">
-        <option value="address">address</option>
-        <option value="domain">domain</option>
-        <option value="ip">ip</option>
-        <option value="subnet">subnet</option>
-      </select>
-    </label>
-    <label>
-      Value
-      <input type="text" name="value" required>
-    </label>
-    <label>
-      Reason
-      <input type="text" name="reason" required>
-    </label>
-    <label>
-      Expires at
-      <input type="datetime-local" name="expires_at">
-    </label>
-    <button class="button" type="submit">Add ban</button>
-  </form>
+    <h3>Add ban</h3>
+    <form class="grid-form" action="/admin/bans" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label>
+            Kind
+            <select name="kind">
+                <option value="address">address</option>
+                <option value="domain">domain</option>
+                <option value="ip">ip</option>
+                <option value="subnet">subnet</option>
+            </select>
+        </label>
+        <label>
+            Value
+            <input type="text" name="value" required>
+        </label>
+        <label>
+            Reason
+            <input type="text" name="reason" required>
+        </label>
+        <label>
+            Expires at
+            <input type="datetime-local" name="expires_at">
+        </label>
+        <button class="button" type="submit">Add ban</button>
+    </form>
 </section>
 
 <section class="card">
-  <form class="inline-form" action="/admin/bans" method="get">
-    <input type="text" name="q" placeholder="Search" value="{{ query }}">
-    <button class="button secondary" type="submit">Filter</button>
-  </form>
-  <table>
-    <thead>
-      <tr>
-        <th>Kind</th>
-        <th>Value</th>
-        <th>Reason</th>
-        <th>Active</th>
-        <th>Expires</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for ban in bans %}
-      <tr>
-        <td>{{ ban.kind }}</td>
-        <td>{{ ban.value }}</td>
-        <td>{{ ban.reason }}</td>
-        <td>{% if ban.is_active == 1 %}yes{% else %}no{% endif %}</td>
-        <td>{{ ban.expires_at.as_deref().unwrap_or("-") }}</td>
-        <td class="actions">
-          {% if ban.is_active == 1 %}
-          <form action="/admin/bans/deactivate" method="post">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="id" value="{{ ban.id }}">
-            <button class="button secondary" type="submit">Deactivate</button>
-          </form>
-          {% else %}
-          <form action="/admin/bans/reactivate" method="post">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="id" value="{{ ban.id }}">
-            <button class="button secondary" type="submit">Reactivate</button>
-          </form>
-          {% endif %}
-          <form action="/admin/bans/delete" method="post" onsubmit="return confirm('Delete ban?');">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="id" value="{{ ban.id }}">
-            <button class="button danger" type="submit">Delete</button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+    <form class="inline-form" action="/admin/bans" method="get">
+        <input type="text" name="q" placeholder="Search" value="{{ query }}">
+        <button class="button secondary" type="submit">Filter</button>
+    </form>
+    <table>
+        <thead>
+        <tr>
+            <th>Kind</th>
+            <th>Value</th>
+            <th>Reason</th>
+            <th>Active</th>
+            <th>Expires</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for ban in bans %}
+        <tr>
+            <td>{{ ban.kind }}</td>
+            <td>{{ ban.value }}</td>
+            <td>{{ ban.reason }}</td>
+            <td>{% if ban.is_active == 1 %}yes{% else %}no{% endif %}</td>
+            <td>{{ ban.expires_at.as_deref().unwrap_or("-") }}</td>
+            <td class="actions">
+                {% if ban.is_active == 1 %}
+                <form action="/admin/bans/deactivate" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="id" value="{{ ban.id }}">
+                    <button class="button secondary" type="submit">Deactivate</button>
+                </form>
+                {% else %}
+                <form action="/admin/bans/reactivate" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="id" value="{{ ban.id }}">
+                    <button class="button secondary" type="submit">Reactivate</button>
+                </form>
+                {% endif %}
+                <form action="/admin/bans/delete" method="post" onsubmit="return confirm('Delete ban?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="id" value="{{ ban.id }}">
+                    <button class="button danger" type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 </section>
 {% endblock %}
