@@ -57,10 +57,10 @@
                     <button class="btn btn-soft" type="submit">Block</button>
                 </form>
                 {% endif %}
-                <form action="/admin/users/delete" method="post" onsubmit="return confirm('Delete mailbox?');">
+                <form action="/admin/users/account-delete" method="post" onsubmit="return confirm('Delete user lifecycle path? This is destructive.');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="address" value="{{ user.address }}">
-                    <button class="btn btn-danger" type="submit">Delete via command</button>
+                    <button class="btn btn-danger" type="submit">Delete user</button>
                 </form>
                 </div>
             </td>
@@ -108,6 +108,11 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="address" value="{{ managed.address }}">
             <button class="btn btn-soft" type="submit">Force resync</button>
+        </form>
+        <form action="/admin/users/delete" method="post" onsubmit="return confirm('Clear INBOX for this user?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="address" value="{{ managed.address }}">
+            <button class="btn btn-soft" type="submit">Clear INBOX</button>
         </form>
         <form action="/admin/users/account-delete" method="post" onsubmit="return confirm('Delete account lifecycle directory? This is destructive.');">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">

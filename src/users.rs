@@ -166,6 +166,9 @@ pub async fn delete_account_lifecycle(shell: &Shell, address: &str) -> AppResult
         .ok_or_else(|| AppError::Validation("user home directory is unavailable".into()))?;
     let home_path = PathBuf::from(&home);
     validate_mail_home_path(&home_path)?;
+    if !home_path.exists() {
+        return Ok(format!("already absent {}", home_path.display()));
+    }
     fs::remove_dir_all(&home_path).await?;
     Ok(format!("deleted {}", home_path.display()))
 }

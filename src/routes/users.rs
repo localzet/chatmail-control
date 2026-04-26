@@ -136,14 +136,14 @@ fn status_banner(status: Option<&str>) -> (Option<String>, Option<String>, Optio
     match status {
         Some("delete-ok") => (
             Some("success".into()),
-            Some("Delete command completed.".into()),
-            Some("The built-in mailbox delete command returned exit code 0.".into()),
+            Some("INBOX clear completed.".into()),
+            Some("The INBOX cleanup command completed successfully.".into()),
         ),
         Some("delete-failed") => (
             Some("error".into()),
-            Some("Delete command failed.".into()),
+            Some("INBOX clear failed.".into()),
             Some(
-                "The built-in mailbox delete command returned a non-zero exit code. Check the audit log or service journal for stderr/stdout."
+                "The INBOX cleanup command returned a non-zero exit code. Check the audit log or service journal for stderr/stdout."
                     .into(),
             ),
         ),
@@ -159,8 +159,8 @@ fn status_banner(status: Option<&str>) -> (Option<String>, Option<String>, Optio
         ),
         Some("account-deleted") => (
             Some("success".into()),
-            Some("Account lifecycle directory removed.".into()),
-            Some("The chatmail maildir path was deleted.".into()),
+            Some("User account deleted.".into()),
+            Some("The chatmail maildir path is now absent.".into()),
         ),
         Some("mailbox-expunged") => (
             Some("success".into()),

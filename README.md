@@ -261,8 +261,9 @@ Logs:
 
 Important:
 
-- the built-in mailbox delete action deletes the `INBOX` mailbox through Dovecot, not the entire account from your
-  chatmail stack;
+- `Delete user` in UI removes the resolved maildir home path (account lifecycle deletion for file-based chatmail
+  setups);
+- `Clear INBOX` in UI only clears mailbox contents through Dovecot and does not remove the account itself;
 - many deployments will recreate or continue listing the user after that command;
 - lifecycle delete only removes the resolved maildir home path and refuses paths outside `/home/vmail/` and
   `/var/vmail/`.
@@ -399,8 +400,9 @@ If one of these tools is unavailable, the page still opens and shows a warning o
 - Login returns `401`: verify that the admin exists and the password was set with the CLI.
 - `/admin` returns `401`: expected without a valid login session, use `/login`.
 - Users page is empty: run `doveadm user '*'` manually on the host to verify permissions/output.
-- Delete returns to the Users page but nothing was removed: the app runs built-in
-  `doveadm mailbox delete -u <address> -s INBOX`, which does not remove the full account lifecycle.
+- Delete user does nothing: use `Manage` and verify that `doveadm user -u <address> -f home` returns a real
+  maildir path; this action removes that path.
+- Clear INBOX does nothing: this action only deletes/expunges mailbox contents and does not remove the account.
 - Login disable/enable fails: verify user home contains `password` or `password.blocked` and service has write access.
 - Lifecycle delete fails: verify `doveadm user -u <address> -f home` returns a path under `/home/vmail/` or
   `/var/vmail/`.
