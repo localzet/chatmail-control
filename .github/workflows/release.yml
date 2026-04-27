@@ -58,6 +58,7 @@ jobs:
       - name: Prepare release bundle
         run: |
           VERSION="${GITHUB_REF_NAME:-manual}"
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
           BUNDLE_DIR="dist/chatmail-control-${VERSION}-linux-amd64-bundle"
           RAW_BINARY="dist/chatmail-control-${VERSION}-linux-amd64"
           mkdir -p "$BUNDLE_DIR"
@@ -86,6 +87,7 @@ jobs:
           files: |
             dist/install.sh
             dist/update.sh
-            dist/chatmail-control-*
-            dist/*.tar.gz
-            dist/*.sha256
+            dist/chatmail-control-${{ env.VERSION }}-linux-amd64
+            dist/chatmail-control-${{ env.VERSION }}-linux-amd64.sha256
+            dist/chatmail-control-${{ env.VERSION }}-linux-amd64-bundle.tar.gz
+            dist/chatmail-control-${{ env.VERSION }}-linux-amd64-bundle.tar.gz.sha256
