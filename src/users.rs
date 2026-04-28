@@ -322,7 +322,9 @@ async fn list_mailboxes(shell: &Shell, address: &str) -> AppResult<Vec<String>> 
 }
 
 async fn hash_password(shell: &Shell, password: &str) -> AppResult<String> {
-    let output = shell.run(&chatmail::password_hash_command(password)).await?;
+    let output = shell
+        .run(&chatmail::password_hash_command(password))
+        .await?;
     if output.status != 0 {
         return Err(AppError::Validation(format!(
             "failed to hash password: {}",
