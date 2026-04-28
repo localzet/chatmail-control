@@ -30,6 +30,40 @@ pub struct ManagedUser {
     pub mailboxes: Vec<String>,
 }
 
+pub async fn create_user_account(
+    shell: &Shell,
+    mail_domain: &str,
+    address: &str,
+    password: &str,
+) -> AppResult<String> {
+    validate_new_address(address, mail_domain)?;
+    if password.trim().is_empty() {
+        return Err(AppError::Validation("password must not be empty".into()));
+    }
+
+    let existing = resolve_home_path(shell, address).await?;
+    if existing.is_some() {
+        return Err(AppError::Validation("user already exists".into()));
+    }
+
+    let root = infer_mailboxes_root(shell, mail_domain).await;
+    let user_home = root.join(address);
+    let password_path = user_home.join("password");
+    if password_path.exists() {
+        return Err(AppError::Validation("password file already exists".into()));
+    }
+
+    fs::create_dir_all(&user_home).await?;
+    let hashed = hash_password(shell, password).await?;
+    fs::write(&password_path, format!("{hashed}\n")).await?;
+
+    Ok(format!(
+        "created {} and wrote {}",
+        user_home.display(),
+        password_path.display()
+    ))
+}
+
 pub async fn list_users(shell: &Shell, blocked_values: &[String]) -> Vec<UserMailbox> {
     let output = shell.run(&chatmail::users_list_command()).await;
     let addresses = match output {
@@ -285,6 +319,57 @@ async fn list_mailboxes(shell: &Shell, address: &str) -> AppResult<Vec<String>> 
     rows.sort();
     rows.dedup();
     Ok(rows)
+}
+
+async fn hash_password(shell: &Shell, password: &str) -> AppResult<String> {
+    let output = shell.run(&chatmail::password_hash_command(password)).await?;
+    if output.status != 0 {
+        return Err(AppError::Validation(format!(
+            "failed to hash password: {}",
+            output.stderr
+        )));
+    }
+    let hash = output.stdout.trim().to_string();
+    if hash.is_empty() {
+        return Err(AppError::Validation("empty password hash output".into()));
+    }
+    Ok(hash)
+}
+
+async fn infer_mailboxes_root(shell: &Shell, mail_domain: &str) -> PathBuf {
+    let output = shell.run(&chatmail::users_list_command()).await;
+    if let Ok(output) = output {
+        if output.status == 0 {
+            let addrs = parse_addresses(&output.stdout);
+            if let Some(first) = addrs.first() {
+                if let Ok(Some(home)) = resolve_home_path(shell, first).await {
+                    let p = PathBuf::from(home);
+                    if let Some(parent) = p.parent() {
+                        return parent.to_path_buf();
+                    }
+                }
+            }
+        }
+    }
+    PathBuf::from(format!("/home/vmail/mail/{mail_domain}"))
+}
+
+fn validate_new_address(address: &str, mail_domain: &str) -> AppResult<()> {
+    let email_re = Regex::new(r"^[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.[A-Za-z]{2,})$")
+        .map_err(|e| AppError::Internal(e.to_string()))?;
+    let caps = email_re
+        .captures(address)
+        .ok_or_else(|| AppError::Validation("invalid email address".into()))?;
+    let domain = caps.get(1).map(|m| m.as_str()).unwrap_or_default();
+    let domain_lc = domain.to_ascii_lowercase();
+    let host_lc = mail_domain.to_ascii_lowercase();
+    if domain_lc != host_lc && !domain_lc.ends_with(&format!(".{host_lc}")) {
+        return Err(AppError::Validation(format!(
+            "email host must be {} or its subdomain",
+            mail_domain
+        )));
+    }
+    Ok(())
 }
 
 fn validate_mail_home_path(path: &Path) -> AppResult<()> {

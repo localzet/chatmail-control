@@ -18,6 +18,13 @@ struct ActionForm {
 }
 
 #[derive(Debug, Deserialize)]
+struct CreateUserForm {
+    csrf_token: String,
+    address: String,
+    password: String,
+}
+
+#[derive(Debug, Deserialize)]
 struct MailboxActionForm {
     csrf_token: String,
     address: String,
@@ -53,6 +60,7 @@ pub fn router() -> Router<AppState> {
         .route("/admin/users/account-disable", post(disable_login))
         .route("/admin/users/account-enable", post(enable_login))
         .route("/admin/users/account-delete", post(delete_account))
+        .route("/admin/users/create", post(create_user))
         .route("/admin/users/mailbox-expunge", post(expunge_mailbox))
         .route("/admin/users/quota-recalc", post(quota_recalc))
         .route("/admin/users/force-resync", post(force_resync))
@@ -187,7 +195,61 @@ fn status_banner(status: Option<&str>) -> (Option<String>, Option<String>, Optio
             Some("Force resync completed.".into()),
             Some("doveadm force-resync finished.".into()),
         ),
+        Some("user-created") => (
+            Some("success".into()),
+            Some("User created.".into()),
+            Some("Account was created by admin.".into()),
+        ),
+        Some("user-create-failed") => (
+            Some("error".into()),
+            Some("Create user failed.".into()),
+            Some("Account creation failed. Check audit log for details.".into()),
+        ),
         _ => (None, None, None),
+    }
+}
+
+async fn create_user(
+    State(state): State<AppState>,
+    jar: PrivateCookieJar<Key>,
+    Form(form): Form<CreateUserForm>,
+) -> crate::error::AppResult<impl IntoResponse> {
+    let current = auth::require_admin(&state, &jar).await?;
+    auth::validate_csrf(&current, &form.csrf_token)?;
+    match users::create_user_account(
+        &state.shell,
+        &state.config.health.domain,
+        &form.address,
+        &form.password,
+    )
+    .await
+    {
+        Ok(details) => {
+            audit::log_event(
+                &state.pool,
+                Some(current.admin.id),
+                "user_created",
+                "user",
+                &form.address,
+                json!({ "details": details }),
+                None,
+            )
+            .await?;
+            Ok(Redirect::to("/admin/users?status=user-created"))
+        }
+        Err(err) => {
+            audit::log_event(
+                &state.pool,
+                Some(current.admin.id),
+                "user_create_failed",
+                "user",
+                &form.address,
+                json!({ "error": err.to_string() }),
+                None,
+            )
+            .await?;
+            Ok(Redirect::to("/admin/users?status=user-create-failed"))
+        }
     }
 }
 

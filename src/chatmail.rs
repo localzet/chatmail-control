@@ -138,6 +138,17 @@ pub fn user_force_resync_command(address: &str) -> Vec<String> {
     ]
 }
 
+pub fn password_hash_command(password: &str) -> Vec<String> {
+    vec![
+        "doveadm".into(),
+        "pw".into(),
+        "-s".into(),
+        "SHA512-CRYPT".into(),
+        "-p".into(),
+        password.into(),
+    ]
+}
+
 pub fn bans_reload_commands() -> Vec<Vec<String>> {
     vec![
         vec!["systemctl".into(), "reload".into(), "postfix".into()],
