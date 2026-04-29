@@ -168,24 +168,8 @@ pub fn bans_reload_commands() -> Vec<Vec<String>> {
     ]
 }
 
-pub fn settings_reload_commands() -> Vec<Vec<String>> {
-    vec![vec!["systemctl".into(), "reload".into(), "doveauth".into()]]
-}
-
 pub fn systemctl_command(action: &str, unit: &str) -> Vec<String> {
     vec!["systemctl".into(), action.into(), unit.into()]
-}
-
-pub fn postfix_show_param_command(name: &str) -> Vec<String> {
-    vec!["postconf".into(), "-h".into(), name.into()]
-}
-
-pub fn postfix_set_param_command(name: &str, value: &str) -> Vec<String> {
-    vec!["postconf".into(), "-e".into(), format!("{name} = {value}")]
-}
-
-pub fn postfix_reload_command() -> Vec<String> {
-    vec!["systemctl".into(), "reload".into(), "postfix".into()]
 }
 
 pub fn log_source_by_name(name: Option<&str>) -> LogSource {

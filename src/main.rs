@@ -6,12 +6,9 @@ mod config;
 mod db;
 mod error;
 mod health;
-mod invites;
 mod logs;
-mod postfix;
 mod routes;
 mod services;
-mod settings;
 mod shell;
 mod users;
 
