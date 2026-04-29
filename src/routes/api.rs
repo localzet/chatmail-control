@@ -131,7 +131,7 @@ async fn create_user(
     Json(payload): Json<CreateUserRequest>,
 ) -> crate::error::AppResult<impl IntoResponse> {
     let current = auth::require_admin(&state, &jar).await?;
-    let csrf = csrf_from_headers(&headers).ok_or_else(|| crate::error::AppError::Forbidden)?;
+    let csrf = csrf_from_headers(&headers).ok_or(crate::error::AppError::Forbidden)?;
     auth::validate_csrf(&current, &csrf)?;
 
     match users::create_user_account(
@@ -183,7 +183,7 @@ async fn block_user(
     Json(payload): Json<AddressActionRequest>,
 ) -> crate::error::AppResult<impl IntoResponse> {
     let current = auth::require_admin(&state, &jar).await?;
-    let csrf = csrf_from_headers(&headers).ok_or_else(|| crate::error::AppError::Forbidden)?;
+    let csrf = csrf_from_headers(&headers).ok_or(crate::error::AppError::Forbidden)?;
     auth::validate_csrf(&current, &csrf)?;
 
     crate::bans::add(
@@ -216,7 +216,7 @@ async fn unblock_user(
     Json(payload): Json<AddressActionRequest>,
 ) -> crate::error::AppResult<impl IntoResponse> {
     let current = auth::require_admin(&state, &jar).await?;
-    let csrf = csrf_from_headers(&headers).ok_or_else(|| crate::error::AppError::Forbidden)?;
+    let csrf = csrf_from_headers(&headers).ok_or(crate::error::AppError::Forbidden)?;
     auth::validate_csrf(&current, &csrf)?;
 
     crate::bans::set_active_for_value(
@@ -248,7 +248,7 @@ async fn delete_account(
     Json(payload): Json<AddressActionRequest>,
 ) -> crate::error::AppResult<impl IntoResponse> {
     let current = auth::require_admin(&state, &jar).await?;
-    let csrf = csrf_from_headers(&headers).ok_or_else(|| crate::error::AppError::Forbidden)?;
+    let csrf = csrf_from_headers(&headers).ok_or(crate::error::AppError::Forbidden)?;
     auth::validate_csrf(&current, &csrf)?;
 
     let mut ban_warnings = Vec::new();
