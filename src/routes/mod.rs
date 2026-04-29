@@ -1,3 +1,4 @@
+pub mod api;
 pub mod auth;
 pub mod bans;
 pub mod dashboard;
@@ -10,6 +11,7 @@ use axum::Router;
 
 pub fn router() -> Router<crate::AppState> {
     Router::new()
+        .merge(api::router())
         .merge(auth::router())
         .merge(dashboard::router())
         .merge(users::router())

@@ -187,6 +187,19 @@ body.compact-mode .data-table td {
   animation: fade-in 0.42s ease;
 }
 
+.animate-fade-in-fast {
+  animation: fade-in 0.24s ease;
+}
+
+.metric-card strong {
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.metric-card strong:empty::after {
+  content: "-";
+  opacity: 0.6;
+}
+
 .animate-float {
   animation: float 11s ease-in-out infinite;
 }

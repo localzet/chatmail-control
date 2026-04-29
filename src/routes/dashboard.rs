@@ -23,10 +23,20 @@ struct DashboardTemplate {
     audit_events: Vec<crate::audit::AuditEvent>,
 }
 
+#[derive(Template)]
+#[template(path = "admin_app.html")]
+struct AdminAppTemplate {
+    page_title: String,
+    current_path: String,
+    username: String,
+    csrf_token: String,
+}
+
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(|| async { Redirect::to("/admin") }))
         .route("/admin", get(index))
+        .route("/admin/app", get(app_shell))
 }
 
 async fn index(
@@ -56,5 +66,18 @@ async fn index(
         active_bans_count: stats.active_bans_count,
         warnings,
         audit_events,
+    })
+}
+
+async fn app_shell(
+    axum::extract::State(state): axum::extract::State<AppState>,
+    jar: PrivateCookieJar<Key>,
+) -> crate::error::AppResult<impl IntoResponse> {
+    let current = auth::require_admin(&state, &jar).await?;
+    Ok(AdminAppTemplate {
+        page_title: "Control App".into(),
+        current_path: "/admin/app".into(),
+        username: current.admin.username,
+        csrf_token: current.session.csrf_token,
     })
 }
