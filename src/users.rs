@@ -64,7 +64,10 @@ pub async fn create_user_account(
     fs::write(&password_path, hashed).await?;
 
     let auth_test = shell
-        .run(&chatmail::user_auth_test_command(&normalized_address, password))
+        .run(&chatmail::user_auth_test_command(
+            &normalized_address,
+            password,
+        ))
         .await?;
     if auth_test.status != 0 {
         let _ = fs::remove_file(&password_path).await;
