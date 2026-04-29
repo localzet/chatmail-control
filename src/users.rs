@@ -77,8 +77,10 @@ pub async fn create_user_account(
         )));
     }
 
+    initialize_mailbox(shell, &normalized_address).await?;
+
     Ok(format!(
-        "created {} and wrote {}; auth test passed",
+        "created {} and wrote {}; auth test passed; mailbox initialized",
         user_home.display(),
         password_path.display()
     ))
@@ -93,10 +95,12 @@ pub async fn list_users(shell: &Shell, blocked_values: &[String]) -> Vec<UserMai
 
     let mut users = Vec::new();
     for address in addresses {
-        let mailbox_size = run_optional(shell, &chatmail::user_size_command(&address)).await;
+        let mailbox_size =
+            run_optional_for_address(shell, &address, chatmail::user_size_command).await;
         let message_count =
-            run_optional(shell, &chatmail::user_message_count_command(&address)).await;
-        let metadata = run_optional(shell, &chatmail::user_metadata_command(&address)).await;
+            run_optional_for_address(shell, &address, chatmail::user_message_count_command).await;
+        let metadata =
+            run_optional_for_address(shell, &address, chatmail::user_metadata_command).await;
         let last_seen = metadata
             .as_ref()
             .and_then(|raw| find_last_seen(raw))
@@ -296,6 +300,23 @@ async fn run_optional(shell: &Shell, command: &[String]) -> Option<String> {
     }
 }
 
+async fn run_optional_for_address<F>(shell: &Shell, address: &str, command_builder: F) -> Option<String>
+where
+    F: Fn(&str) -> Vec<String>,
+{
+    let primary = run_optional(shell, &command_builder(address)).await;
+    if primary.is_some() {
+        return primary;
+    }
+
+    let normalized = address.to_ascii_lowercase();
+    if normalized != address {
+        return run_optional(shell, &command_builder(&normalized)).await;
+    }
+
+    None
+}
+
 fn find_last_seen(metadata: &str) -> Option<String> {
     metadata
         .lines()
@@ -356,6 +377,44 @@ async fn hash_password(shell: &Shell, password: &str) -> AppResult<String> {
         return Err(AppError::Validation("empty password hash output".into()));
     }
     Ok(hash)
+}
+
+async fn initialize_mailbox(shell: &Shell, address: &str) -> AppResult<()> {
+    let create = shell
+        .run(&chatmail::user_mailbox_create_command(address, "INBOX"))
+        .await?;
+    if create.status != 0 {
+        let list = shell.run(&chatmail::user_mailbox_list_command(address)).await?;
+        let inbox_exists = list
+            .stdout
+            .lines()
+            .map(str::trim)
+            .any(|line| line.eq_ignore_ascii_case("INBOX"));
+        if !inbox_exists {
+            return Err(AppError::Validation(format!(
+                "mailbox init failed: {} {}",
+                create.stdout, create.stderr
+            )));
+        }
+    }
+
+    let quota = shell.run(&chatmail::user_quota_recalc_command(address)).await?;
+    if quota.status != 0 {
+        return Err(AppError::Validation(format!(
+            "quota recalc failed: {} {}",
+            quota.stdout, quota.stderr
+        )));
+    }
+
+    let resync = shell.run(&chatmail::user_force_resync_command(address)).await?;
+    if resync.status != 0 {
+        return Err(AppError::Validation(format!(
+            "force-resync failed: {} {}",
+            resync.stdout, resync.stderr
+        )));
+    }
+
+    Ok(())
 }
 
 async fn infer_mailboxes_root(shell: &Shell, mail_domain: &str) -> PathBuf {

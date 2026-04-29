@@ -59,6 +59,17 @@ pub fn user_message_count_command(address: &str) -> Vec<String> {
     ]
 }
 
+pub fn user_mailbox_create_command(address: &str, mailbox: &str) -> Vec<String> {
+    vec![
+        "doveadm".into(),
+        "mailbox".into(),
+        "create".into(),
+        "-u".into(),
+        address.into(),
+        mailbox.into(),
+    ]
+}
+
 pub fn user_metadata_command(address: &str) -> Vec<String> {
     vec![
         "doveadm".into(),
