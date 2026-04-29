@@ -9,6 +9,23 @@
     </div>
 </section>
 
+<section class="glass-card mt-4">
+    <h3 class="text-lg font-semibold text-white">Create user</h3>
+    <form id="create-user-form" class="mt-4 grid gap-4 md:grid-cols-3">
+        <label class="text-sm text-slate-300">
+            Email
+            <input id="create-user-address" class="form-input mt-1 w-full" type="email" required>
+        </label>
+        <label class="text-sm text-slate-300">
+            Password
+            <input id="create-user-password" class="form-input mt-1 w-full" type="text" required>
+        </label>
+        <div class="flex items-end">
+            <button id="create-user-submit" class="btn btn-primary" type="submit">Create user</button>
+        </div>
+    </form>
+</section>
+
 <section class="mt-4 grid gap-4 sm:grid-cols-3">
     <article class="glass-card metric-card">
         <h4 class="text-sm font-medium text-slate-400">Mailboxes</h4>
@@ -38,6 +55,7 @@
                     <th class="px-3 py-2">Mailbox size</th>
                     <th class="px-3 py-2">Messages</th>
                     <th class="px-3 py-2">Last seen</th>
+                    <th class="px-3 py-2">Actions</th>
                 </tr>
             </thead>
             <tbody id="users-live-body"></tbody>
@@ -50,5 +68,8 @@
     <ul id="warnings-live" class="mt-3 space-y-2"></ul>
 </section>
 
+<script>
+window.__cmCsrfToken = "{{ csrf_token }}";
+</script>
 <script src="/static/admin-app.js"></script>
 {% endblock %}

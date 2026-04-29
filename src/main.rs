@@ -7,6 +7,7 @@ mod db;
 mod error;
 mod health;
 mod logs;
+mod request_id;
 mod routes;
 mod services;
 mod shell;
@@ -15,7 +16,7 @@ mod users;
 use std::{net::SocketAddr, path::PathBuf, sync::Arc};
 
 use auth::LoginRateLimiter;
-use axum::{extract::FromRef, routing::get_service, Router};
+use axum::{extract::FromRef, middleware, routing::get_service, Router};
 use axum_extra::extract::cookie::Key;
 use clap::{Args, Parser, Subcommand};
 use sqlx::SqlitePool;
@@ -132,6 +133,7 @@ async fn serve(args: ServeArgs) -> anyhow::Result<()> {
     let app = Router::new()
         .merge(routes::router())
         .nest_service("/static", get_service(ServeDir::new("static")))
+        .layer(middleware::from_fn(request_id::request_id_middleware))
         .layer(TraceLayer::new_for_http())
         .with_state(state);
 
