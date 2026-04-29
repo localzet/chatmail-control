@@ -2,10 +2,8 @@ pub mod auth;
 pub mod bans;
 pub mod dashboard;
 pub mod health;
-pub mod invites;
 pub mod logs;
 pub mod services;
-pub mod settings;
 pub mod users;
 
 use axum::Router;
@@ -16,9 +14,7 @@ pub fn router() -> Router<crate::AppState> {
         .merge(dashboard::router())
         .merge(users::router())
         .merge(bans::router())
-        .merge(invites::router())
         .merge(logs::router())
         .merge(services::router())
         .merge(health::router())
-        .merge(settings::router())
 }
