@@ -77,7 +77,14 @@ pub async fn create_user_account(
         )));
     }
 
-    initialize_mailbox(shell, &normalized_address).await?;
+    if let Err(err) = initialize_mailbox(shell, &normalized_address).await {
+        let _ = fs::remove_file(&password_path).await;
+        let _ = fs::remove_dir(&user_home).await;
+        return Err(AppError::Validation(format!(
+            "user created but mailbox initialization failed: {}",
+            err
+        )));
+    }
 
     Ok(format!(
         "created {} and wrote {}; auth test passed; mailbox initialized",
