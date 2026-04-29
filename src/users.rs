@@ -36,18 +36,24 @@ pub async fn create_user_account(
     address: &str,
     password: &str,
 ) -> AppResult<String> {
-    validate_new_address(address, mail_domain)?;
-    if password.trim().is_empty() {
+    let normalized_address = address.trim().to_ascii_lowercase();
+    validate_new_address(&normalized_address, mail_domain)?;
+    if password.is_empty() {
         return Err(AppError::Validation("password must not be empty".into()));
     }
+    if password != password.trim() {
+        return Err(AppError::Validation(
+            "password must not start or end with spaces".into(),
+        ));
+    }
 
-    let existing = resolve_home_path(shell, address).await?;
+    let existing = resolve_home_path(shell, &normalized_address).await?;
     if existing.is_some() {
         return Err(AppError::Validation("user already exists".into()));
     }
 
     let root = infer_mailboxes_root(shell, mail_domain).await;
-    let user_home = root.join(address);
+    let user_home = root.join(&normalized_address);
     let password_path = user_home.join("password");
     if password_path.exists() {
         return Err(AppError::Validation("password file already exists".into()));
@@ -55,10 +61,21 @@ pub async fn create_user_account(
 
     fs::create_dir_all(&user_home).await?;
     let hashed = hash_password(shell, password).await?;
-    fs::write(&password_path, format!("{hashed}\n")).await?;
+    fs::write(&password_path, hashed).await?;
+
+    let auth_test = shell
+        .run(&chatmail::user_auth_test_command(&normalized_address, password))
+        .await?;
+    if auth_test.status != 0 {
+        let _ = fs::remove_file(&password_path).await;
+        return Err(AppError::Validation(format!(
+            "user created but auth test failed: {} {}",
+            auth_test.stdout, auth_test.stderr
+        )));
+    }
 
     Ok(format!(
-        "created {} and wrote {}",
+        "created {} and wrote {}; auth test passed",
         user_home.display(),
         password_path.display()
     ))

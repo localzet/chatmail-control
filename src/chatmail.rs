@@ -96,6 +96,18 @@ pub fn user_home_command(address: &str) -> Vec<String> {
     ]
 }
 
+pub fn user_auth_test_command(address: &str, password: &str) -> Vec<String> {
+    vec![
+        "doveadm".into(),
+        "auth".into(),
+        "test".into(),
+        "-x".into(),
+        "service=imap".into(),
+        address.into(),
+        password.into(),
+    ]
+}
+
 pub fn user_mailbox_list_command(address: &str) -> Vec<String> {
     vec![
         "doveadm".into(),
