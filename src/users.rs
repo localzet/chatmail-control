@@ -307,7 +307,11 @@ async fn run_optional(shell: &Shell, command: &[String]) -> Option<String> {
     }
 }
 
-async fn run_optional_for_address<F>(shell: &Shell, address: &str, command_builder: F) -> Option<String>
+async fn run_optional_for_address<F>(
+    shell: &Shell,
+    address: &str,
+    command_builder: F,
+) -> Option<String>
 where
     F: Fn(&str) -> Vec<String>,
 {
@@ -391,7 +395,9 @@ async fn initialize_mailbox(shell: &Shell, address: &str) -> AppResult<()> {
         .run(&chatmail::user_mailbox_create_command(address, "INBOX"))
         .await?;
     if create.status != 0 {
-        let list = shell.run(&chatmail::user_mailbox_list_command(address)).await?;
+        let list = shell
+            .run(&chatmail::user_mailbox_list_command(address))
+            .await?;
         let inbox_exists = list
             .stdout
             .lines()
@@ -405,7 +411,9 @@ async fn initialize_mailbox(shell: &Shell, address: &str) -> AppResult<()> {
         }
     }
 
-    let quota = shell.run(&chatmail::user_quota_recalc_command(address)).await?;
+    let quota = shell
+        .run(&chatmail::user_quota_recalc_command(address))
+        .await?;
     if quota.status != 0 {
         return Err(AppError::Validation(format!(
             "quota recalc failed: {} {}",
@@ -413,7 +421,9 @@ async fn initialize_mailbox(shell: &Shell, address: &str) -> AppResult<()> {
         )));
     }
 
-    let resync = shell.run(&chatmail::user_force_resync_command(address)).await?;
+    let resync = shell
+        .run(&chatmail::user_force_resync_command(address))
+        .await?;
     if resync.status != 0 {
         return Err(AppError::Validation(format!(
             "force-resync failed: {} {}",
