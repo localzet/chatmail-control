@@ -8,6 +8,8 @@ CONFIG_DIR="${CHATMAIL_CONTROL_CONFIG_DIR:-/etc/chatmail-control}"
 STATE_DIR="${CHATMAIL_CONTROL_STATE_DIR:-/var/lib/chatmail-control}"
 ENABLE_SERVICE="${CHATMAIL_CONTROL_ENABLE_SERVICE:-1}"
 START_SERVICE="${CHATMAIL_CONTROL_START_SERVICE:-0}"
+SERVICE_USER="${CHATMAIL_CONTROL_SERVICE_USER:-chatmail-control}"
+SERVICE_GROUP="${CHATMAIL_CONTROL_SERVICE_GROUP:-chatmail-control}"
 
 usage() {
   cat <<'EOF'
@@ -34,6 +36,8 @@ Environment variables:
   CHATMAIL_CONTROL_STATE_DIR
   CHATMAIL_CONTROL_ENABLE_SERVICE
   CHATMAIL_CONTROL_START_SERVICE
+  CHATMAIL_CONTROL_SERVICE_USER
+  CHATMAIL_CONTROL_SERVICE_GROUP
 EOF
 }
 
@@ -48,6 +52,35 @@ fail() {
 
 require_command() {
   command -v "$1" >/dev/null 2>&1 || fail "required command not found: $1"
+}
+
+ensure_service_user() {
+  if ! getent group "${SERVICE_GROUP}" >/dev/null; then
+    log "creating system group ${SERVICE_GROUP}"
+    groupadd --system "${SERVICE_GROUP}"
+  fi
+
+  if ! id -u "${SERVICE_USER}" >/dev/null 2>&1; then
+    log "creating system user ${SERVICE_USER}"
+    useradd --system --home-dir "${STATE_DIR}" --gid "${SERVICE_GROUP}" \
+      --shell /usr/sbin/nologin "${SERVICE_USER}"
+  fi
+}
+
+ensure_state_permissions() {
+  local db_file
+  db_file="${STATE_DIR}/chatmail-control.db"
+
+  install -d -m 0750 -o "${SERVICE_USER}" -g "${SERVICE_GROUP}" "${STATE_DIR}"
+  install -d -m 0755 "${CONFIG_DIR}"
+
+  if [[ ! -f "${db_file}" ]]; then
+    log "creating database file ${db_file}"
+    install -m 0640 -o "${SERVICE_USER}" -g "${SERVICE_GROUP}" /dev/null "${db_file}"
+  else
+    chown "${SERVICE_USER}:${SERVICE_GROUP}" "${db_file}"
+    chmod 0640 "${db_file}"
+  fi
 }
 
 parse_args() {
@@ -149,6 +182,8 @@ install_release() {
 
   install -d "${INSTALL_ROOT}" "${CONFIG_DIR}" "${STATE_DIR}"
   install -d "${INSTALL_ROOT}/static" "${INSTALL_ROOT}/templates" "${INSTALL_ROOT}/migrations"
+  ensure_service_user
+  ensure_state_permissions
 
   log "installing binary"
   install -m 0755 "${bundle_dir}/chatmail-control" "${BINARY_PATH}"
@@ -166,6 +201,8 @@ install_release() {
   else
     log "preserved existing ${CONFIG_DIR}/config.toml"
   fi
+  chgrp "${SERVICE_GROUP}" "${CONFIG_DIR}/config.toml" "${CONFIG_DIR}/config.example.toml"
+  chmod 0640 "${CONFIG_DIR}/config.toml" "${CONFIG_DIR}/config.example.toml"
 
   log "installing systemd unit"
   install -m 0644 "${bundle_dir}/systemd/chatmail-control.service" /etc/systemd/system/chatmail-control.service
