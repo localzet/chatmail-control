@@ -1,7 +1,7 @@
 use askama::Error as AskamaError;
 use axum::{
     http::StatusCode,
-    response::{Html, IntoResponse, Response},
+    response::{Html, IntoResponse, Redirect, Response},
 };
 use thiserror::Error;
 
@@ -49,12 +49,16 @@ impl From<AskamaError> for AppError {
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
+        if matches!(self, AppError::Unauthorized) {
+            return Redirect::to("/login").into_response();
+        }
+
         let status = match self {
             AppError::NotFound => StatusCode::NOT_FOUND,
-            AppError::Unauthorized => StatusCode::UNAUTHORIZED,
             AppError::Forbidden => StatusCode::FORBIDDEN,
             AppError::Validation(_) | AppError::Config(_) => StatusCode::BAD_REQUEST,
             AppError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Unauthorized => unreachable!("handled above"),
         };
         let body = Html(format!(
             "<html><body><h1>{}</h1><p>{}</p></body></html>",
