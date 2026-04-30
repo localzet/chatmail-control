@@ -400,7 +400,7 @@ async fn ensure_maildir_permissions(
     let password = password_path.to_string_lossy().to_string();
 
     let chown = shell
-        .run(&vec![
+        .run(&[
             "chown".into(),
             "-R".into(),
             "vmail:vmail".into(),
@@ -415,7 +415,7 @@ async fn ensure_maildir_permissions(
     }
 
     let chmod_home = shell
-        .run(&vec!["chmod".into(), "0700".into(), home.clone()])
+        .run(&["chmod".into(), "0700".into(), home.clone()])
         .await?;
     if chmod_home.status != 0 {
         return Err(AppError::Validation(format!(
@@ -425,7 +425,7 @@ async fn ensure_maildir_permissions(
     }
 
     let chmod_password = shell
-        .run(&vec!["chmod".into(), "0600".into(), password.clone()])
+        .run(&["chmod".into(), "0600".into(), password.clone()])
         .await?;
     if chmod_password.status != 0 {
         return Err(AppError::Validation(format!(
