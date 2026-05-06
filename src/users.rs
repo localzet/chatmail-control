@@ -62,6 +62,7 @@ pub async fn create_user_account(
     fs::create_dir_all(&user_home).await?;
     let hashed = hash_password(shell, password).await?;
     fs::write(&password_path, hashed).await?;
+    ensure_maildir_permissions(shell, &user_home, &password_path).await?;
 
     let auth_test = shell
         .run(&chatmail::user_auth_test_command(
@@ -388,6 +389,52 @@ async fn hash_password(shell: &Shell, password: &str) -> AppResult<String> {
         return Err(AppError::Validation("empty password hash output".into()));
     }
     Ok(hash)
+}
+
+async fn ensure_maildir_permissions(
+    shell: &Shell,
+    user_home: &Path,
+    password_path: &Path,
+) -> AppResult<()> {
+    let home = user_home.to_string_lossy().to_string();
+    let password = password_path.to_string_lossy().to_string();
+
+    let chown = shell
+        .run(&[
+            "chown".into(),
+            "-R".into(),
+            "vmail:vmail".into(),
+            home.clone(),
+        ])
+        .await?;
+    if chown.status != 0 {
+        return Err(AppError::Validation(format!(
+            "failed to set owner on {}: {} {}",
+            home, chown.stdout, chown.stderr
+        )));
+    }
+
+    let chmod_home = shell
+        .run(&["chmod".into(), "0700".into(), home.clone()])
+        .await?;
+    if chmod_home.status != 0 {
+        return Err(AppError::Validation(format!(
+            "failed to chmod {}: {} {}",
+            home, chmod_home.stdout, chmod_home.stderr
+        )));
+    }
+
+    let chmod_password = shell
+        .run(&["chmod".into(), "0600".into(), password.clone()])
+        .await?;
+    if chmod_password.status != 0 {
+        return Err(AppError::Validation(format!(
+            "failed to chmod {}: {} {}",
+            password, chmod_password.stdout, chmod_password.stderr
+        )));
+    }
+
+    Ok(())
 }
 
 async fn initialize_mailbox(shell: &Shell, address: &str) -> AppResult<()> {
