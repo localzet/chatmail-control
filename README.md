@@ -79,6 +79,7 @@ The service is intended to run with host-level privileges because it needs acces
 - `postqueue`
 - `journalctl`
 - `systemctl reload ...`
+- `sudo -n` access for host commands when service user is non-root
 - local service state and host filesystem policy files
 
 This is not an unprivileged sidecar service. Treat it as a host admin component.
@@ -412,7 +413,9 @@ If one of these tools is unavailable, the page still opens and shows a warning o
   `/var/vmail/`.
 - Expunge fails: verify mailbox exists in `doveadm mailbox list -u <address>` and use an exact mailbox name.
 - `doveadm user '*'` works as `root` but not as an unprivileged user: expected on many real systems; the provided
-  deployment model runs the service with host-level privileges.
+  deployment model uses `sudo -n` for host commands and installer-managed `/etc/sudoers.d/chatmail-control`.
+- `auth-master client: Auth client doesn't have permissions to list users`: verify
+  `/etc/sudoers.d/chatmail-control` exists and includes `doveadm` NOPASSWD rules; restart `chatmail-control`.
 - Mailbox metrics show `unavailable`: the optional command failed or returned unsupported output.
 - Health page shows warnings: verify that required host tools and services are available on the mail server.
 - Bans were saved but Postfix/Dovecot did not reload: inspect `audit_log` and system journal for built-in reload command

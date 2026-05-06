@@ -83,6 +83,16 @@ ensure_state_permissions() {
   fi
 }
 
+install_sudoers_policy() {
+  local sudoers_file
+  sudoers_file="/etc/sudoers.d/chatmail-control"
+  cat > "${sudoers_file}" <<EOF
+# Allow chatmail-control service account to run required host admin commands non-interactively.
+${SERVICE_USER} ALL=(root) NOPASSWD: /usr/bin/doveadm *, /usr/bin/journalctl *, /usr/bin/systemctl *, /usr/sbin/postconf *
+EOF
+  chmod 0440 "${sudoers_file}"
+}
+
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -184,6 +194,7 @@ install_release() {
   install -d "${INSTALL_ROOT}/static" "${INSTALL_ROOT}/templates" "${INSTALL_ROOT}/migrations"
   ensure_service_user
   ensure_state_permissions
+  install_sudoers_policy
 
   log "installing binary"
   install -m 0755 "${bundle_dir}/chatmail-control" "${BINARY_PATH}"

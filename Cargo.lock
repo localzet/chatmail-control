@@ -404,6 +404,7 @@ dependencies = [
  "clap",
  "hickory-resolver",
  "http",
+ "libc",
  "rand",
  "regex",
  "serde",

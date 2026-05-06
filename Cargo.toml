@@ -15,6 +15,7 @@ chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.5", features = ["derive", "env"] }
 hickory-resolver = { version = "0.24", features = ["tokio-runtime"] }
 http = "1.1"
+libc = "0.2"
 rand = "0.8"
 regex = "1.11"
 serde = { version = "1.0", features = ["derive"] }

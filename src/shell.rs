@@ -39,8 +39,9 @@ impl Shell {
             .ok_or_else(|| AppError::Validation("command argv is empty".into()))?;
 
         let args = substitute_template_args(args, replacements)?;
-        let mut command = Command::new(program);
-        command.args(args);
+        let (effective_program, effective_args) = with_privileged_wrapper(program, args);
+        let mut command = Command::new(effective_program);
+        command.args(effective_args);
         command.kill_on_drop(true);
 
         let output = timeout(self.timeout, command.output())
@@ -61,6 +62,24 @@ impl Shell {
         fs::write(path, content).await?;
         Ok(())
     }
+}
+
+fn with_privileged_wrapper(program: &str, args: Vec<String>) -> (String, Vec<String>) {
+    if unsafe { libc::geteuid() } == 0 {
+        return (program.to_string(), args);
+    }
+
+    if needs_privileged_wrapper(program) {
+        let mut wrapped = vec!["-n".to_string(), program.to_string()];
+        wrapped.extend(args);
+        return ("sudo".to_string(), wrapped);
+    }
+
+    (program.to_string(), args)
+}
+
+fn needs_privileged_wrapper(program: &str) -> bool {
+    matches!(program, "doveadm" | "journalctl" | "systemctl" | "postconf")
 }
 
 pub fn substitute_template_args(
@@ -116,12 +135,19 @@ pub async fn run_reload_commands(
 
 #[cfg(test)]
 mod tests {
-    use super::substitute_template_args;
+    use super::{needs_privileged_wrapper, substitute_template_args};
 
     #[test]
     fn substitutes_address_placeholder() {
         let argv = vec!["quota".into(), "{address}".into(), "x".into()];
         let got = substitute_template_args(&argv, &[("{address}", "user@example.com")]).unwrap();
         assert_eq!(got, vec!["quota", "user@example.com", "x"]);
+    }
+
+    #[test]
+    fn wraps_only_privileged_commands() {
+        assert!(needs_privileged_wrapper("doveadm"));
+        assert!(needs_privileged_wrapper("journalctl"));
+        assert!(!needs_privileged_wrapper("cat"));
     }
 }
