@@ -53,6 +53,11 @@ pub const LOG_SOURCES: &[LogSource] = &[
         identifiers: &[],
     },
     LogSource {
+        name: "fail2ban",
+        unit: "fail2ban",
+        identifiers: &[],
+    },
+    LogSource {
         name: "doveauth",
         unit: "doveauth",
         identifiers: &[],
