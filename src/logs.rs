@@ -14,7 +14,11 @@ pub async fn read_logs(
     query: Option<&str>,
     limit: usize,
 ) -> Vec<LogLine> {
-    read_journal_unit(shell, source.unit, query, limit).await
+    if source.identifiers.is_empty() {
+        return read_journal_unit(shell, source.unit, query, limit).await;
+    }
+
+    read_journal_identifiers(shell, source.identifiers, query, limit).await
 }
 
 pub async fn read_journal_unit(
@@ -31,6 +35,47 @@ pub async fn read_journal_unit(
         limit.to_string(),
         "--no-pager".into(),
     ];
+    let output = shell.run(&command).await;
+    let mut lines = match output {
+        Ok(output) => output
+            .stdout
+            .lines()
+            .map(|line| LogLine {
+                level: classify_log_line(line),
+                text: line.to_string(),
+            })
+            .collect::<Vec<_>>(),
+        Err(err) => vec![LogLine {
+            level: "error".into(),
+            text: err.to_string(),
+        }],
+    };
+    if let Some(query) = query {
+        let query = query.to_ascii_lowercase();
+        lines.retain(|line| line.text.to_ascii_lowercase().contains(&query));
+    }
+    lines
+}
+
+pub async fn read_journal_identifiers(
+    shell: &Shell,
+    identifiers: &[&str],
+    query: Option<&str>,
+    limit: usize,
+) -> Vec<LogLine> {
+    let mut command = vec!["journalctl".into()];
+    for identifier in identifiers {
+        command.push("-t".into());
+        command.push((*identifier).to_string());
+    }
+    command.extend([
+        "-n".into(),
+        limit.to_string(),
+        "--no-pager".into(),
+        "--output".into(),
+        "short-iso".into(),
+    ]);
+
     let output = shell.run(&command).await;
     let mut lines = match output {
         Ok(output) => output

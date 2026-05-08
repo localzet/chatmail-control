@@ -2,6 +2,7 @@
 pub struct LogSource {
     pub name: &'static str,
     pub unit: &'static str,
+    pub identifiers: &'static [&'static str],
 }
 
 pub const COMMAND_TIMEOUT_SECONDS: u64 = 10;
@@ -10,26 +11,66 @@ pub const LOG_SOURCES: &[LogSource] = &[
     LogSource {
         name: "dovecot",
         unit: "dovecot",
+        identifiers: &[],
     },
     LogSource {
         name: "postfix",
         unit: "postfix",
+        identifiers: &[
+            "postfix/anvil",
+            "postfix/cleanup",
+            "postfix/lmtp",
+            "postfix/lmtp-filtermail",
+            "postfix/local",
+            "postfix/master",
+            "postfix/pickup",
+            "postfix/postscreen",
+            "postfix/qmgr",
+            "postfix/reinject",
+            "postfix/reinject_incoming",
+            "postfix/scache",
+            "postfix/smtp",
+            "postfix/smtpd",
+            "postfix/smtps",
+            "postfix/submission",
+            "postfix/tlsmgr",
+            "postfix/trivial-rewrite",
+        ],
+    },
+    LogSource {
+        name: "filtermail",
+        unit: "filtermail",
+        identifiers: &[],
+    },
+    LogSource {
+        name: "filtermail-incoming",
+        unit: "filtermail-incoming",
+        identifiers: &[],
+    },
+    LogSource {
+        name: "filtermail-transport",
+        unit: "filtermail-transport",
+        identifiers: &[],
     },
     LogSource {
         name: "doveauth",
         unit: "doveauth",
+        identifiers: &[],
     },
     LogSource {
         name: "chatmail-metadata",
         unit: "chatmail-metadata",
+        identifiers: &[],
     },
     LogSource {
         name: "chatmail-expire",
         unit: "chatmail-expire",
+        identifiers: &[],
     },
     LogSource {
         name: "lastlogin",
         unit: "lastlogin",
+        identifiers: &[],
     },
 ];
 
