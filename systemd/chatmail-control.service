@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
-User=chatmail-control
-Group=chatmail-control
+User=root
+Group=root
 WorkingDirectory=/opt/chatmail-control
 ExecStart=/usr/local/bin/chatmail-control serve
 Restart=always
